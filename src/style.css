@@ -6206,3 +6206,100 @@ body:has(.login-page) {
     margin-bottom: 22px;
   }
 }
+
+/* Login brand placement: logo sits independently in the hero's top-right corner. */
+.login-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #203c9c;
+}
+.login-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("/kadamba-lake-view-hero-v2.webp");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 38% center;
+  pointer-events: none;
+}
+.login-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 31, 77, 0.16) 0%,
+    rgba(17, 35, 83, 0.52) 52%,
+    rgba(13, 27, 66, 0.88) 100%
+  );
+  pointer-events: none;
+}
+.login-hero-logo-wrap {
+  position: absolute;
+  z-index: 4;
+  top: 24px;
+  right: 24px;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 19px;
+  background: linear-gradient(145deg, #ffffff 0%, #edf2ff 100%);
+  box-shadow: 0 8px 24px rgba(8, 22, 61, 0.3);
+}
+.login-hero-logo-wrap .login-hero-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  object-fit: contain;
+  object-position: center;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  filter: none;
+}
+.login-hero-logo-wrap .login-hero-mark {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4266d5, #203c9c);
+  color: #fff;
+  font-size: 17px;
+  box-shadow: none;
+}
+.login-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 100%;
+}
+.login-hero-content h2 {
+  max-width: 390px;
+  text-wrap: balance;
+}
+@media (max-width: 720px) {
+  .login-hero-logo-wrap {
+    top: 16px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    padding: 4px;
+  }
+  .login-hero-content h2 {
+    padding-right: 54px;
+  }
+}

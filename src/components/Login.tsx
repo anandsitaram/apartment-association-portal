@@ -36,7 +36,7 @@ export default function Login({
       <div className="login-shell">
         <aside className="login-hero">
           <div className="login-hero-image" aria-hidden="true" />
-          <div className="login-hero-content">
+          <div className="login-hero-logo-wrap">
             {logoFailed ? (
               <div className="login-hero-mark show" aria-hidden="true">
                 {mark}
@@ -49,6 +49,8 @@ export default function Login({
                 onError={() => setLogoFailed(true)}
               />
             )}
+          </div>
+          <div className="login-hero-content">
             <h2>{orgFull}</h2>
             <p>
               Maintenance and corpus fund tracking for every flat, all in one
