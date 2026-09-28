@@ -129,8 +129,18 @@ export default function Dashboard({
   });
   const T = (k: "exp" | "due" | "paid" | "bal" | "cdue" | "cpaid" | "cbal") =>
     sum(per, (r) => r[k]);
-  const periodName = fy == null ? "All months" : fyLabel(fy);
-  const range = `${label(S.ms[0]!.month)} – ${label(S.ms.at(-1)!.month)}`;
+  const firstMonthLabel = label(S.ms[0]!.month);
+  const lastMonthLabel = label(S.ms.at(-1)!.month);
+  const range =
+    firstMonthLabel === lastMonthLabel
+      ? firstMonthLabel
+      : `${firstMonthLabel} – ${lastMonthLabel}`;
+  // Avoid the confusing "All months · Sept 2026 – Sept 2026" when there is
+  // only one month in the dataset. Keep the range when multiple months exist.
+  const periodDescription =
+    fy == null && S.ms.length === 1
+      ? firstMonthLabel
+      : `${fy == null ? "All months" : fyLabel(fy)} · ${range}`;
 
   // ---- flat-wise table for the selected month ----
   const at = (obj: PerFlat | undefined, flat: string) =>
@@ -186,9 +196,7 @@ export default function Dashboard({
         <div>
           <div className="eyebrow">{APP_BRAND_SHORT} · OVERVIEW</div>
           <h1>Maintenance &amp; Corpus Fund</h1>
-          <p>
-            {periodName} · {range}
-          </p>
+          <p>{periodDescription}</p>
         </div>
         <label className="dash-select">
           <span>Period</span>

@@ -5008,7 +5008,7 @@ button {
 .login-hero-image {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
   background-image: url("/community-building.svg");
   background-size: cover;
   background-position: center center;
@@ -5018,7 +5018,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 1;
   background:
     linear-gradient(
       180deg,
@@ -5030,7 +5030,7 @@ button {
 }
 .login-hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   min-height: 520px;
   flex-direction: column;
@@ -5347,10 +5347,10 @@ body {
   overscroll-behavior-x: contain;
 }
 
-/* header: the page title is already shown in the page heading on desktop */
+/* Keep the current page name visible in the top header on every screen size. */
 @media (min-width: 821px) {
   .topbar-left strong {
-    display: none;
+    display: inline-block;
   }
 }
 
@@ -6038,10 +6038,14 @@ body:has(.login-page) {
     linear-gradient(90deg, rgba(24, 43, 100, 0.22), rgba(24, 43, 100, 0.02));
 }
 .login-hero-logo {
-  width: 76px;
-  height: 76px;
+  width: 88px;
+  height: 88px;
+  padding: 5px;
   margin-bottom: auto;
-  filter: drop-shadow(0 5px 12px rgba(9, 20, 57, 0.18));
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 24px rgba(9, 20, 57, 0.22);
+  object-fit: contain;
 }
 .login-hero h2 {
   text-wrap: balance;
