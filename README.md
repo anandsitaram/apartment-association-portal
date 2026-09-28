@@ -1,6 +1,6 @@
 # Community Portal — White-label Apartment Association Platform
 
-A white-label, mobile-friendly community management portal for apartment owners associations. This copy uses the fictional **Cedar Grove Residences** brand, a teal theme, an original placeholder building illustration, and fictional demo flat records. All core roles and application features are retained.
+A white-label, mobile-friendly community management portal for apartment owners associations. This copy uses the fictional **Kadamba Lake View Apartment** brand, a teal theme, an original placeholder building illustration, and fictional demo flat records. All core roles and application features are retained.
 
 Before testing the demo accounts, create a disposable PostgreSQL database and follow [`docs/DEMO_DATA.md`](docs/DEMO_DATA.md). For rebranding instructions, see [`docs/BRANDING.md`](docs/BRANDING.md). Do not use the included public demo credentials for a live association.
 
@@ -237,7 +237,7 @@ Copies flats, months, payments, settings, deleted-month figures **and user accou
 **Backup and restore from your computer**
 
 ```
-npm run db -- backup                       # writes cedar-grove-backup-<date>.json
+npm run db -- backup                       # writes kadamba-lake-view-backup-<date>.json
 npm run db -- restore file.json --yes      # replaces the data in DATABASE_URL, all-or-nothing
 npm run db -- import-flats public/template.xlsx --yes  # upserts flat master data from the Excel template
 ```
@@ -323,3 +323,7 @@ Inputs are validated (month format, amounts, modes, dates, flat numbers, e-mail/
 ## Architecture
 
 See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the feature-based frontend structure, backend action modules, shared UI rules, loading/error contract, and financial-year convention.
+
+## Flat data import template
+
+The in-app flat-data template and `docs/templates/kadamba-lake-view-flat-data-template-with-demo-data.xlsx` include 40 fictional sample flat records: 20 in Block A and 20 in Block C. **Replace or delete these sample rows before importing into a real apartment database.** The rows use fictional names, `example.com` email placeholders, and blank phone numbers.

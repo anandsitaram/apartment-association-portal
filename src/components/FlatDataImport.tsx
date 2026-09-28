@@ -38,7 +38,7 @@ async function exportFlatData(flats: Flat[]) {
   ws.autoFilter = { from: "A1", to: "J1" };
   const guide = wb.addWorksheet("Instructions");
   guide.addRows([
-    ["Cedar Grove Residences — Flat Data Export"],
+    ["Kadamba Lake View Apartment — Flat Data Export"],
     [
       "This workbook contains flat master records only; it does not include resident login accounts, payments, or month history.",
     ],
@@ -58,7 +58,7 @@ async function exportFlatData(flats: Flat[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `cedar-grove-flat-data-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  a.download = `kadamba-lake-view-flat-data-${new Date().toISOString().slice(0, 10)}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -80,11 +80,90 @@ async function downloadFlatTemplate() {
     { header: "excluded", key: "excluded", width: 16 },
     { header: "corpexcluded", key: "corpexcluded", width: 18 },
   ];
+  const demoNames = [
+    "Alex Morgan",
+    "Jamie Taylor",
+    "Casey Jordan",
+    "Riley Parker",
+    "Avery Reed",
+    "Drew Ellis",
+    "Taylor Quinn",
+    "Morgan Lane",
+    "Cameron Blake",
+    "Jordan Avery",
+    "Sam Rowan",
+    "Robin Ellis",
+    "Skyler Brooks",
+    "Emerson Gray",
+    "Harper Lee",
+    "Parker Ellis",
+    "Reese Campbell",
+    "Finley Morgan",
+    "Dakota James",
+    "Charlie Avery",
+    "Rowan Taylor",
+    "Payton Reed",
+    "Kendall Blake",
+    "Sage Parker",
+    "River Quinn",
+    "Phoenix Lane",
+    "Arden Brooks",
+    "Jules Harper",
+    "Micah Stone",
+    "Remy Bailey",
+    "Shiloh Bennett",
+    "Ellis Monroe",
+    "Noah Finley",
+    "Ari Collins",
+    "Kai Dawson",
+    "Milan Hayes",
+    "Rory West",
+    "Skye Palmer",
+    "Emery Scott",
+    "Lane Foster",
+  ];
+  const demoSizes = [
+    { type: "3BHK", bua: 1706.26, uds: 557.49 },
+    { type: "2BHK", bua: 1202.8, uds: 392.99 },
+    { type: "2BHK", bua: 1195.54, uds: 390.62 },
+    { type: "2BHK", bua: 1205.7, uds: 393.94 },
+    { type: "3BHK", bua: 1651.12, uds: 539.48 },
+    { type: "2BHK", bua: 1217.31, uds: 397.73 },
+    { type: "3BHK", bua: 1764.29, uds: 576.45 },
+    { type: "3BHK", bua: 1706.26, uds: 557.49 },
+    { type: "2BHK", bua: 1202.8, uds: 392.99 },
+    { type: "2BHK", bua: 1195.54, uds: 390.62 },
+  ];
+  ["A", "C"].forEach((block, blockIndex) => {
+    for (let unitIndex = 0; unitIndex < 20; unitIndex++) {
+      const idx = blockIndex * 20 + unitIndex;
+      const size = demoSizes[unitIndex % demoSizes.length];
+      ws.addRow({
+        flat: `${block}-${101 + unitIndex}`,
+        block,
+        name: demoNames[idx],
+        type: size.type,
+        bua: size.bua,
+        uds: size.uds,
+        phone: "",
+        email: `resident.${block.toLowerCase()}${101 + unitIndex}@example.com`,
+        excluded: "FALSE",
+        corpexcluded: "FALSE",
+      });
+    }
+  });
   ws.getRow(1).font = { bold: true };
   ws.views = [{ state: "frozen", ySplit: 1 }];
+  ws.autoFilter = { from: "A1", to: "J41" };
   const guide = wb.addWorksheet("Instructions");
   [
-    ["Bulk Flat Data Import"],
+    ["Kadamba Lake View Apartment — Bulk Flat Data Import"],
+    [
+      "This sample workbook is pre-filled with 40 fictional demo flats: 20 in Block A and 20 in Block C.",
+    ],
+    [
+      "IMPORTANT: Before importing into a real apartment database, replace or delete all sample rows. These are fictional examples only.",
+    ],
     ["Use the Flat Data sheet. Enter one flat per row."],
     [
       "Columns: flat (required for all modes), block, name, type, bua (Sq Ft), uds, phone, email, excluded, corpExcluded. Block is optional (e.g. A or C).",
@@ -116,7 +195,7 @@ async function downloadFlatTemplate() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "cedar-grove-flat-data-template.xlsx";
+  a.download = "kadamba-lake-view-flat-data-template-with-demo-data.xlsx";
   a.click();
   URL.revokeObjectURL(url);
 }

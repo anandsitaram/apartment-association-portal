@@ -224,7 +224,7 @@ export async function ensureSchema(
       `UPDATE flats SET corp_excluded = COALESCE(flat IN (SELECT jsonb_array_elements_text(x) FROM (SELECT excluded_corp_flats AS x FROM months ORDER BY month DESC LIMIT 1) t), false) WHERE EXISTS (SELECT 1 FROM months)`,
     );
     await q(
-      `INSERT INTO settings(key,value) VALUES('columns','{"orgName":"Cedar Grove Residences","orgShort":"CG"}'::jsonb) ON CONFLICT(key) DO UPDATE SET value=COALESCE(settings.value,'{}'::jsonb) || jsonb_build_object('orgName', COALESCE(NULLIF(settings.value->>'orgName',''),'Cedar Grove Residences'), 'orgShort', COALESCE(NULLIF(settings.value->>'orgShort',''),'CG'))`,
+      `INSERT INTO settings(key,value) VALUES('columns','{"orgName":"Kadamba Lake View Apartment","orgShort":"KLV"}'::jsonb) ON CONFLICT(key) DO UPDATE SET value=COALESCE(settings.value,'{}'::jsonb) || jsonb_build_object('orgName', COALESCE(NULLIF(settings.value->>'orgName',''),'Kadamba Lake View Apartment'), 'orgShort', COALESCE(NULLIF(settings.value->>'orgShort',''),'KLV'))`,
     );
   }
   await q(

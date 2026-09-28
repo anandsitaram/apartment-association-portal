@@ -420,7 +420,8 @@ describe("reminders by e-mail", () => {
   it("sends to flats that have an address and reports the rest", async () => {
     process.env.REMINDERS = "true";
     process.env.RESEND_API_KEY = "re_test";
-    process.env.MAIL_FROM = "Cedar Grove Residences <no-reply@example.com>";
+    process.env.MAIL_FROM =
+      "Kadamba Lake View Apartment <no-reply@example.com>";
     const fetchMock = vi.fn(async () => ({ ok: true, status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const r = (await post({ action: "sendReminders", items })).body;
@@ -488,7 +489,7 @@ describe("backups", () => {
     const sent = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body);
     expect(sent.to).toEqual(["treasurer@example.com"]);
     expect(sent.attachments[0].filename).toMatch(
-      /^cedar-grove-backup-2026-09-21\.json$/,
+      /^kadamba-lake-view-backup-2026-09-21\.json$/,
     );
     expect(
       JSON.parse(Buffer.from(sent.attachments[0].content, "base64").toString())

@@ -28,3 +28,7 @@ To create login credentials, use **Bulk import Flat Users** on the same page aft
 ## Building blocks
 
 The optional `block` column supports multiple buildings or blocks (for example `A` and `C`). Flat number remains the unique payment/account identifier, so use distinct flat identifiers such as `A-101` and `C-101`. The Flats page can be filtered by block, and export includes the block value.
+
+## Downloadable sample template
+
+The in-app Excel template is pre-filled with 40 fictional sample flats (20 in Block A and 20 in Block C), using `example.com` email addresses and no phone numbers. Before importing into a real database, replace or delete the sample rows. The template is an example of the required columns and block format; it is not real resident data.

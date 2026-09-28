@@ -33,7 +33,7 @@ export default function Login({
             ) : (
               <img
                 className="login-hero-logo"
-                src="/cedar-grove-logo.svg"
+                src="/kadamba-lake-view-logo.svg"
                 alt={`${orgFull} logo`}
                 onError={() => setLogoFailed(true)}
               />

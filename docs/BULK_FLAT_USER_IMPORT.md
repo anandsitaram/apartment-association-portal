@@ -5,7 +5,7 @@ The Users page supports importing or updating up to 500 Flat User rows per workb
 ## Create new users only
 
 1. Ensure all flat records already exist under Flats.
-2. In Users, download `cedar-grove-flat-user-template.xlsx`.
+2. In Users, download `kadamba-lake-view-flat-user-template.xlsx`.
 3. Add one account per row in the `Flat Users` sheet. Keep the header names unchanged.
 4. Required columns: `username`, `password`, `flat`. Optional columns: `phone`, `email`.
 5. Select **Create new users only**, upload the completed workbook, and review the confirmation and result report.

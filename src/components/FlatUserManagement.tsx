@@ -133,7 +133,7 @@ export default function FlatUserManagement({
     guide.getColumn(1).width = 100;
     saveWorkbook(
       await wb.xlsx.writeBuffer(),
-      "cedar-grove-flat-user-template.xlsx",
+      "kadamba-lake-view-flat-user-template.xlsx",
     );
   };
 
@@ -168,7 +168,7 @@ export default function FlatUserManagement({
     guide.getColumn(1).width = 110;
     saveWorkbook(
       await wb.xlsx.writeBuffer(),
-      `cedar-grove-flat-users-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      `kadamba-lake-view-flat-users-${new Date().toISOString().slice(0, 10)}.xlsx`,
     );
   };
 

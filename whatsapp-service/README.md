@@ -1,8 +1,8 @@
-# Cedar Grove Residences WhatsApp service
+# Kadamba Lake View Apartment WhatsApp service
 
 A small standalone Node/TypeScript service that talks to WhatsApp via
 [Baileys](https://github.com/WhiskeySockets/Baileys) (an unofficial WhatsApp
-Web client) and exposes a plain REST API for the main Cedar Grove Residences app to call.
+Web client) and exposes a plain REST API for the main Kadamba Lake View Apartment app to call.
 
 ## Why this is a separate service — read this before deploying
 
@@ -75,7 +75,7 @@ Incoming messages (residents replying) are logged to the console and, if
 ## Deploying alongside the main app
 
 ```
-cedar-grove-app-main/
+kadamba-lake-view-app-main/
 ├── api/, server/, src/     # existing Vercel-deployed app
 └── whatsapp-service/       # deploy this separately, e.g. on Railway
 ```

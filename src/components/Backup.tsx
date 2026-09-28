@@ -23,7 +23,7 @@ const safeOrg = (settings: Settings) =>
     .trim()
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "")
-    .toLowerCase() || "cedar-grove";
+    .toLowerCase() || "kadamba-lake-view";
 
 // JSON backups of all data (not user passwords). Super admin only.
 export default function Backup({

@@ -333,8 +333,8 @@ describe("schema upgrade", () => {
     expect(f["104-2BHK"].excluded).toBe(false);
     // an existing installation keeps the name it has always shown
     expect((await get()).body.settings).toMatchObject({
-      orgName: "Cedar Grove Residences Owners Association",
-      orgShort: "Cedar Grove Residences",
+      orgName: "Kadamba Lake View Apartment Owners Association",
+      orgShort: "Kadamba Lake View Apartment",
     });
     expect(
       (

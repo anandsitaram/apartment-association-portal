@@ -422,7 +422,8 @@ describe("notifications hub", () => {
 
   beforeAll(async () => {
     process.env.RESEND_API_KEY = "re_test";
-    process.env.MAIL_FROM = "Cedar Grove Residences <no-reply@example.com>";
+    process.env.MAIL_FROM =
+      "Kadamba Lake View Apartment <no-reply@example.com>";
     process.env.ENABLE_NOTIFICATION = "true";
     await setFlatEmail("101-3BHK", "flat101@example.com");
     await setFlatEmail("102-2BHK", "flat102@example.com");

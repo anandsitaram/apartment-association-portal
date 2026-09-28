@@ -124,7 +124,7 @@ async function main() {
   }
 
   await sql.query(
-    `INSERT INTO settings(key,value) VALUES('columns',jsonb_build_object('orgName','Cedar Grove Residences','orgShort','CG')) ON CONFLICT(key) DO UPDATE SET value=COALESCE(settings.value,'{}'::jsonb) || jsonb_build_object('orgName',COALESCE(NULLIF(settings.value->>'orgName',''),'Cedar Grove Residences'),'orgShort',COALESCE(NULLIF(settings.value->>'orgShort',''),'CG'))`,
+    `INSERT INTO settings(key,value) VALUES('columns',jsonb_build_object('orgName','Kadamba Lake View Apartment','orgShort','KLV')) ON CONFLICT(key) DO UPDATE SET value=COALESCE(settings.value,'{}'::jsonb) || jsonb_build_object('orgName',COALESCE(NULLIF(settings.value->>'orgName',''),'Kadamba Lake View Apartment'),'orgShort',COALESCE(NULLIF(settings.value->>'orgShort',''),'KLV'))`,
   );
 
   console.log("Demo data is ready.");

@@ -159,7 +159,7 @@ Copies flats, months, payments, settings, deleted-month figures **and user accou
 **Backup and restore from your computer**
 
 ```
-npm run db -- backup                       # writes cedar-grove-backup-<date>.json
+npm run db -- backup                       # writes kadamba-lake-view-backup-<date>.json
 npm run db -- restore file.json --yes      # replaces the data in DATABASE_URL, all-or-nothing
 ```
 

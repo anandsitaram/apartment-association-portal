@@ -205,7 +205,7 @@ export async function runDaily(now = new Date()) {
           .trim()
           .replace(/[^a-z0-9]+/gi, "-")
           .replace(/^-+|-+$/g, "")
-          .toLowerCase() || "cedar-grove";
+          .toLowerCase() || "kadamba-lake-view";
       await sendMail({
         to: process.env.BACKUP_EMAIL,
         subject: `${orgName} backup ${now.toISOString().slice(0, 10)}`,

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 100" role="img" aria-label="Kadamba Lake View Apartment logo">
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="#ffffff"/>
+  <path d="M20 66V35L48 16L76 35V66H20Z" fill="#0f766e"/>
+  <path d="M33 66V45H45V66M51 66V40H64V66" fill="#d9f6ef"/>
+  <path d="M15 36L48 12L81 36" fill="none" stroke="#115e59" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M14 77C25 72 34 82 46 77C58 72 68 82 82 77" fill="none" stroke="#0f766e" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="115" y="42" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="#ffffff">Kadamba Lake View</text>
+  <text x="116" y="69" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="650" letter-spacing="2" fill="#d7f6ef">APARTMENT</text>
+</svg>

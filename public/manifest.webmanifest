@@ -1,7 +1,7 @@
 {
-  "name": "Cedar Grove Community Portal",
-  "short_name": "Cedar Grove",
-  "description": "Maintenance, payments and bookings for Cedar Grove Residences Owners Association",
+  "name": "Kadamba Lake View Apartment Community Portal",
+  "short_name": "Kadamba Lake View",
+  "description": "Maintenance, payments and bookings for Kadamba Lake View Apartment Owners Association",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,4 +1,4 @@
-# Cedar Grove Residences application architecture
+# Kadamba Lake View Apartment application architecture
 
 ## Frontend
 
