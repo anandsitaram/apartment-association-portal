@@ -266,7 +266,7 @@ table {
   white-space: nowrap;
 }
 th {
-  background: linear-gradient(var(--pri), #115e59);
+  background: linear-gradient(var(--pri), #203c9c);
   color: #fff;
   font-weight: 600;
   white-space: normal;
@@ -944,7 +944,7 @@ select {
 
 .report-table th {
   height: 47px;
-  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+  background: linear-gradient(180deg, #3157c9 0%, #203c9c 100%);
   color: #fff;
   border-bottom: 0;
   font-size: 13px;
@@ -1345,10 +1345,10 @@ table td.r {
 
 /* ==========================================================================\n   Purple UI / responsive shell v3\n   ========================================================================== */
 :root {
-  --brand-primary: #0f766e;
-  --brand-primary-dark: #115e59;
-  --brand-primary-soft: #ccfbf1;
-  --brand-primary-line: #99f6e4;
+  --brand-primary: #3157c9;
+  --brand-primary-dark: #203c9c;
+  --brand-primary-soft: #e8edff;
+  --brand-primary-line: #c4d0ff;
   --rv-bg: #f3f8f7;
   --rv-text: #161b2d;
   --rv-muted: #697386;
@@ -1371,7 +1371,7 @@ body {
   width: 244px;
   flex-basis: 244px;
   padding: 22px 14px 18px;
-  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+  background: linear-gradient(180deg, #3157c9 0%, #203c9c 100%);
   border-right: 0;
   color: #fff;
   box-shadow: 8px 0 28px rgba(53, 34, 110, 0.1);
@@ -1583,7 +1583,7 @@ button.pri:hover {
 }
 .report-table th {
   height: 49px;
-  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+  background: linear-gradient(180deg, #3157c9 0%, #203c9c 100%);
   font-size: 12.5px;
 }
 .report-table th.text,
@@ -1922,7 +1922,7 @@ body:has(.login-page) {
   background: linear-gradient(135deg, #12a36b, #0b7d55);
 }
 .kpi-purple {
-  background: linear-gradient(135deg, #0d9488, #115e59);
+  background: linear-gradient(135deg, #4266d5, #203c9c);
 }
 .kpi-amber {
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -2191,7 +2191,7 @@ tr.flat-excluded {
   box-shadow: 0 24px 70px rgba(53, 35, 110, 0.18);
 }
 .login-hero {
-  background: linear-gradient(160deg, #0d9488 0%, #115e59 60%, #134e4a 100%);
+  background: linear-gradient(160deg, #4266d5 0%, #203c9c 60%, #172b70 100%);
   color: #fff;
   padding: 44px 38px;
   display: flex;
@@ -4306,7 +4306,7 @@ button {
   line-height: 1.25;
 }
 .settings-tab.active {
-  background: #ccfbf1;
+  background: #e8edff;
   border-color: #d9ccff;
   color: #4f2abf;
 }
@@ -4349,7 +4349,7 @@ button {
   padding: 7px 10px;
   border-radius: 999px;
   background: #f5f3ff;
-  color: #0f766e;
+  color: #3157c9;
   font-size: 12px;
   font-weight: 600;
 }
@@ -4575,7 +4575,7 @@ button {
   padding: 7px 10px;
   border-radius: 999px;
   background: #f5f3ff;
-  color: #0f766e;
+  color: #3157c9;
   font-size: 12px;
   font-weight: 600;
   word-break: break-all;
@@ -5003,7 +5003,7 @@ button {
   isolation: isolate;
   min-height: 520px;
   overflow: hidden;
-  background: #115e59;
+  background: #203c9c;
 }
 .login-hero-image {
   position: absolute;
@@ -5674,7 +5674,7 @@ body:has(.app-shell) {
 .hb-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #0f766e, #2dd4bf);
+  background: linear-gradient(90deg, #3157c9, #a9baf7);
   border-radius: 99px;
 }
 .hb-val small {
@@ -5743,7 +5743,7 @@ html.dark .brand-mark {
   place-items: center;
   margin-bottom: 8px;
   border-radius: 14px;
-  background: var(--pri, #0f766e);
+  background: var(--pri, #3157c9);
   color: #fff;
   font-size: 18px;
   font-weight: 800;
@@ -5988,4 +5988,157 @@ html.dark .brand-mark {
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* Kadamba Lake View Apartment refresh: blue-indigo and champagne, replacing the old teal palette. */
+:root {
+  --pri: #3157c9;
+  --pri2: #4266d5;
+  --brand-primary: #3157c9;
+  --brand-primary-dark: #203c9c;
+  --brand-primary-soft: #e8edff;
+  --brand-primary-line: #c4d0ff;
+  --rv-bg: #f5f7ff;
+  --rv-text: #18233d;
+  --rv-muted: #65718a;
+}
+body:has(.login-page) {
+  background: #f5f7ff;
+}
+.login-page {
+  background:
+    radial-gradient(
+      ellipse at 15% 12%,
+      rgba(223, 231, 255, 0.95),
+      transparent 45%
+    ),
+    linear-gradient(135deg, #f7f8fc 0%, #eef2fb 100%);
+}
+.login-shell {
+  width: min(980px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 24px;
+  box-shadow: 0 28px 90px rgba(31, 50, 112, 0.18);
+}
+.login-hero {
+  background: #203c9c;
+}
+.login-hero-image {
+  background-image: url("/kadamba-lake-view-hero.webp");
+  background-position: 38% center;
+}
+.login-hero::after {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(25, 47, 113, 0.08) 0%,
+      rgba(24, 43, 100, 0.48) 48%,
+      rgba(17, 31, 75, 0.94) 100%
+    ),
+    linear-gradient(90deg, rgba(24, 43, 100, 0.22), rgba(24, 43, 100, 0.02));
+}
+.login-hero-logo {
+  width: 76px;
+  height: 76px;
+  margin-bottom: auto;
+  filter: drop-shadow(0 5px 12px rgba(9, 20, 57, 0.18));
+}
+.login-hero h2 {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+.login-shell .login-card {
+  padding: 48px 44px;
+  gap: 9px;
+}
+.login-shell .login-card h1 {
+  color: #172342;
+  letter-spacing: -0.03em;
+}
+.login-shell .login-help {
+  line-height: 1.55;
+  color: #65718a;
+}
+.login-shell .login-card label {
+  color: #263452;
+}
+.login-shell .login-card input {
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #d7def0;
+  border-radius: 10px;
+  background: #fbfcff;
+  color: #18233d;
+}
+.login-shell .login-card input:focus {
+  outline: 3px solid rgba(66, 102, 213, 0.16);
+  border-color: #4266d5;
+  background: #fff;
+}
+.pw-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+}
+.login-shell .pw-wrap input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 76px;
+}
+.login-shell .pw-toggle {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  bottom: 5px;
+  transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  min-height: 0;
+  height: auto;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #3157c9;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1;
+  box-shadow: none;
+}
+.login-shell .pw-toggle:hover:not(:disabled) {
+  background: #edf1ff;
+  transform: none;
+  filter: none;
+}
+.login-shell .login-submit {
+  min-height: 48px;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4266d5, #3157c9);
+  box-shadow: 0 7px 16px rgba(49, 87, 201, 0.18);
+}
+.login-shell .login-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3659c7, #203c9c);
+  box-shadow: 0 9px 18px rgba(49, 87, 201, 0.23);
+}
+.login-shell .login-submit:disabled {
+  box-shadow: none;
+}
+.login-shell .login-error {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.auth-boot-brand {
+  background: linear-gradient(135deg, #4266d5, #203c9c);
+}
+@media (max-width: 720px) {
+  .login-shell .login-card {
+    padding: 30px 24px;
+  }
+  .login-hero-image {
+    background-position: 30% center;
+  }
 }

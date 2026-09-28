@@ -410,7 +410,7 @@ export default function App() {
     document.documentElement.classList.toggle("dark", dark);
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", dark ? "#0f172a" : "#0f766e");
+      ?.setAttribute("content", dark ? "#0f172a" : "#3157c9");
   }, [dark]);
   const [data, setData] = useState<Data>({
     months: [],
@@ -639,8 +639,10 @@ export default function App() {
       setShowLogin(false);
       setSidebarOpen(false);
       setMsg("");
+      return true;
     } catch (e) {
       setMsg(errText(e));
+      return false;
     }
   };
 
@@ -737,7 +739,7 @@ export default function App() {
         aria-live="polite"
       >
         <div className="auth-boot-brand" aria-hidden="true">
-          CG
+          KLV
         </div>
         <strong>Loading your workspace…</strong>
         <span className="auth-boot-subtitle">

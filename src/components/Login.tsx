@@ -5,16 +5,27 @@ export default function Login({
   onLogin,
   msg,
   onCancel,
+  onClearMessage,
 }: {
-  onLogin: (username: string, password: string) => unknown;
+  onLogin: (username: string, password: string) => Promise<boolean>;
   msg: string;
   onCancel: (() => void) | null;
+  onClearMessage?: () => void;
 }) {
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [show, setShow] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
-  const submit = () => u.trim() && p && onLogin(u.trim(), p);
+  const [submitting, setSubmitting] = useState(false);
+  const submit = async () => {
+    if (!u.trim() || !p || submitting) return;
+    setSubmitting(true);
+    try {
+      await onLogin(u.trim(), p);
+    } finally {
+      setSubmitting(false);
+    }
+  };
   // Branding is intentionally fixed in shared/branding.ts; login must not depend on
   // localStorage or database settings because neither is guaranteed before sign-in.
   const orgFull = APP_BRAND_NAME;
@@ -53,7 +64,6 @@ export default function Login({
 
         <form
           className="login-card"
-          autoComplete="off"
           onSubmit={(e) => {
             e.preventDefault();
             submit();
@@ -67,12 +77,15 @@ export default function Login({
             id="rv-user"
             name="rv-username"
             autoFocus
-            autoComplete="off"
+            autoComplete="username"
             autoCapitalize="none"
             spellCheck="false"
             placeholder="Enter your username"
             value={u}
-            onChange={(e) => setU(e.target.value)}
+            onChange={(e) => {
+              setU(e.target.value);
+              onClearMessage?.();
+            }}
           />
 
           <label htmlFor="rv-pass">Password</label>
@@ -80,17 +93,21 @@ export default function Login({
             <input
               id="rv-pass"
               name="rv-password"
-              autoComplete="off"
+              autoComplete="current-password"
               type={show ? "text" : "password"}
               placeholder="Enter your password"
               value={p}
-              onChange={(e) => setP(e.target.value)}
+              onChange={(e) => {
+                setP(e.target.value);
+                onClearMessage?.();
+              }}
             />
             <button
               type="button"
               className="pw-toggle"
               onClick={() => setShow(!show)}
               aria-label={show ? "Hide password" : "Show password"}
+              aria-pressed={show}
             >
               {show ? "Hide" : "Show"}
             </button>
@@ -104,9 +121,10 @@ export default function Login({
           <button
             type="submit"
             className="login-submit"
-            disabled={!u.trim() || !p}
+            disabled={!u.trim() || !p || submitting}
+            aria-busy={submitting}
           >
-            Sign in
+            {submitting ? "Signing in…" : "Sign in"}
           </button>
           {onCancel && (
             <button type="button" className="login-cancel" onClick={onCancel}>
