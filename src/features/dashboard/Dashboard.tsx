@@ -135,12 +135,13 @@ export default function Dashboard({
     firstMonthLabel === lastMonthLabel
       ? firstMonthLabel
       : `${firstMonthLabel} – ${lastMonthLabel}`;
-  // Avoid the confusing "All months · Sept 2026 – Sept 2026" when there is
-  // only one month in the dataset. Keep the range when multiple months exist.
+  // Explain that the selector filters the dashboard totals by all available
+  // months or by financial year; the flat-wise section separately shows the
+  // currently selected month.
   const periodDescription =
-    fy == null && S.ms.length === 1
-      ? firstMonthLabel
-      : `${fy == null ? "All months" : fyLabel(fy)} · ${range}`;
+    fy == null
+      ? `Totals: All available months · ${range}${S.ms.length === 1 ? " (1 month)" : ` (${S.ms.length} months)`}`
+      : `Totals: Financial year ${fyLabel(fy)} · ${range}`;
 
   // ---- flat-wise table for the selected month ----
   const at = (obj: PerFlat | undefined, flat: string) =>
@@ -199,7 +200,7 @@ export default function Dashboard({
           <p>{periodDescription}</p>
         </div>
         <label className="dash-select">
-          <span>Period</span>
+          <span>Totals period</span>
           <select
             aria-label="Select period"
             value={fy ?? "all"}
@@ -207,10 +208,10 @@ export default function Dashboard({
               setFy(e.target.value === "all" ? null : +e.target.value)
             }
           >
-            <option value="all">All months</option>
+            <option value="all">All available months</option>
             {S.years.map((y) => (
               <option key={y} value={y}>
-                {fyLabel(y)}
+                Financial year {fyLabel(y)}
               </option>
             ))}
           </select>
