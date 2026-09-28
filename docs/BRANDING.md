@@ -5,7 +5,7 @@ This repository is a reusable community/apartment association portal. The includ
 ## Rebrand the application
 
 1. Update `shared/branding.ts` (`APP_BRAND_NAME` and `APP_BRAND_SHORT`). Keep these values static so login and the app shell work before database bootstrap.
-2. Replace `public/kadamba-lake-view-logo.svg` with your own logo (or update `src/components/Login.tsx` to point to your asset).
+2. Replace `public/kadamba-lake-view-logo-v2.svg` with your own logo (or update `src/components/Login.tsx` to point to your asset).
 3. Replace `public/community-building.svg` with a licensed building image or your own artwork. The current image is an original placeholder illustration.
 4. Adjust the brand palette in `src/style.css` (`--brand-primary`, `--brand-primary-dark`, `--brand-primary-soft`, and `--brand-primary-line`) and the remaining matching accent values.
 5. Update `index.html`, `public/manifest.webmanifest`, and `public/icon-192.png` / `public/icon-512.png`.

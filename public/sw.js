@@ -1,6 +1,6 @@
 // Keeps the app shell (page + scripts + styles) so the app opens instantly and shows a friendly message offline.
 // Private data (anything under /api/) is never stored here.
-const CACHE = "community-portal-shell-v2";
+const CACHE = "kadamba-community-portal-shell-v3";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

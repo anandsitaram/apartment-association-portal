@@ -6024,7 +6024,7 @@ body:has(.login-page) {
   background: #203c9c;
 }
 .login-hero-image {
-  background-image: url("/kadamba-lake-view-hero.webp");
+  background-image: url("/kadamba-lake-view-hero-v2.webp");
   background-position: 38% center;
 }
 .login-hero::after {
@@ -6144,5 +6144,65 @@ body:has(.login-page) {
   }
   .login-hero-image {
     background-position: 30% center;
+  }
+}
+
+/* Final login layer hardening: keep the photograph, tint and logo in separate layers.
+   Versioned asset URLs avoid stale logo/photo files from previous service-worker caches. */
+.login-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.login-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("/kadamba-lake-view-hero-v2.webp");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 38% center;
+  opacity: 1;
+  pointer-events: none;
+}
+.login-hero::after {
+  z-index: 1;
+  pointer-events: none;
+}
+.login-hero-content {
+  position: relative;
+  z-index: 2;
+}
+.login-hero-content > .login-hero-logo {
+  position: relative;
+  z-index: 3;
+  display: block;
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  margin: 0 auto auto 0;
+  object-fit: contain;
+  object-position: center;
+  background: #fff;
+  border: 5px solid #fff;
+  border-radius: 20px;
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 10px 28px rgba(7, 17, 48, 0.3);
+}
+.login-hero-content > .login-hero-mark {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 auto;
+  margin: 0 auto auto 0;
+  border: 5px solid #fff;
+  box-shadow: 0 10px 28px rgba(7, 17, 48, 0.3);
+}
+@media (max-width: 720px) {
+  .login-hero-content > .login-hero-logo {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 22px;
   }
 }
