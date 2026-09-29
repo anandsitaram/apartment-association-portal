@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -17,28 +19,8 @@ import { call, errText, isAuthError, type Save } from "./api.js";
 import { DEFAULT_HEADS, inr, label, orgName, orgShort } from "./lib.js";
 import { APP_BRAND_NAME, APP_BRAND_SHORT } from "../shared/branding";
 import Login from "./components/Login.jsx";
-import { MonthTab } from "./features/months/index.js";
-import Flats from "./features/flats/index.js";
-import Summary from "./features/summary/index.js";
-import AuditLog from "./components/AuditLog.jsx";
-import Backup from "./components/Backup.jsx";
-import MaintenanceSettings from "./features/settings/index.js";
-import FeatureConfiguration from "./features/settings/FeatureConfiguration.js";
+import { MonthTab, MonthBar, NewMonthDialog } from "./features/months/index.js";
 import Dashboard from "./features/dashboard/index.js";
-import { MonthBar } from "./features/months/index.js";
-import CorpusFund from "./components/CorpusFund.jsx";
-import FlatUserManagement from "./components/FlatUserManagement.jsx";
-import Users from "./components/Users.jsx";
-import DeveloperAccounts from "./components/DeveloperAccounts.jsx";
-import { NewMonthDialog } from "./features/months/index.js";
-import Tickets from "./components/Tickets.jsx";
-import { HallBooking, GymBooking } from "./features/bookings/index.js";
-import NotificationsPanel from "./components/NotificationsPanel.jsx";
-import Polls from "./components/Polls.jsx";
-import MyMaintenance from "./components/MyMaintenance.jsx";
-import ContactUs from "./components/ContactUs.jsx";
-import ContactSubmissions from "./components/ContactSubmissions.jsx";
-import Events from "./features/events/Events.jsx";
 import ToastHost from "./components/ui/ToastHost.jsx";
 import DialogHost from "./components/ui/DialogHost.jsx";
 import LoadingState from "./components/ui/LoadingState.jsx";
@@ -47,11 +29,53 @@ import EmptyState from "./components/ui/EmptyState.jsx";
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import { openConfirm } from "./components/ui/appDialog.js";
 import { exportCurrentPage } from "./export-page.js";
-import SecurityCenter from "./components/SecurityCenter.jsx";
 import { notify } from "./components/ui/ToastHost.jsx";
 import { printFlatStatement } from "./print-doc.js";
-import ChangePassword from "./components/ChangePassword.jsx";
 import { usePersistentState } from "./usePersistentState.js";
+
+// Code-split every page/panel that isn't needed for the very first paint
+// (Dashboard + Login + Months are the common landing views and stay eager).
+// Each of these pulls in its own chunk only when the user actually opens
+// that section, which keeps the initial bundle small.
+const Flats = lazy(() => import("./features/flats/index.js"));
+const Summary = lazy(() => import("./features/summary/index.js"));
+const AuditLog = lazy(() => import("./components/AuditLog.jsx"));
+const Backup = lazy(() => import("./components/Backup.jsx"));
+const MaintenanceSettings = lazy(() => import("./features/settings/index.js"));
+const FeatureConfiguration = lazy(
+  () => import("./features/settings/FeatureConfiguration.js"),
+);
+const CorpusFund = lazy(() => import("./components/CorpusFund.jsx"));
+const FlatUserManagement = lazy(
+  () => import("./components/FlatUserManagement.jsx"),
+);
+const Users = lazy(() => import("./components/Users.jsx"));
+const DeveloperAccounts = lazy(
+  () => import("./components/DeveloperAccounts.jsx"),
+);
+const Tickets = lazy(() => import("./components/Tickets.jsx"));
+const HallBooking = lazy(() =>
+  import("./features/bookings/index.js").then((m) => ({
+    default: m.HallBooking,
+  })),
+);
+const GymBooking = lazy(() =>
+  import("./features/bookings/index.js").then((m) => ({
+    default: m.GymBooking,
+  })),
+);
+const NotificationsPanel = lazy(
+  () => import("./components/NotificationsPanel.jsx"),
+);
+const Polls = lazy(() => import("./components/Polls.jsx"));
+const MyMaintenance = lazy(() => import("./components/MyMaintenance.jsx"));
+const ContactUs = lazy(() => import("./components/ContactUs.jsx"));
+const ContactSubmissions = lazy(
+  () => import("./components/ContactSubmissions.jsx"),
+);
+const Events = lazy(() => import("./features/events/Events.jsx"));
+const SecurityCenter = lazy(() => import("./components/SecurityCenter.jsx"));
+const ChangePassword = lazy(() => import("./components/ChangePassword.jsx"));
 
 interface NavItem {
   id: string;
@@ -1143,14 +1167,16 @@ export default function App() {
           </button>
         )}
         {showPassword && (
-          <ChangePassword
-            token={token}
-            onClose={() => setShowPassword(false)}
-            onDone={() => {
-              setShowPassword(false);
-              logout();
-            }}
-          />
+          <Suspense fallback={null}>
+            <ChangePassword
+              token={token}
+              onClose={() => setShowPassword(false)}
+              onDone={() => {
+                setShowPassword(false);
+                logout();
+              }}
+            />
+          </Suspense>
         )}
         {auth ? (
           <button className="logout-nav" onClick={logout}>
@@ -1305,7 +1331,11 @@ export default function App() {
               </div>
             </div>
           )}
-          <ErrorBoundary>{renderContent()}</ErrorBoundary>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingState label="Loading…" />}>
+              {renderContent()}
+            </Suspense>
+          </ErrorBoundary>
         </main>
         <footer className="app-footer">
           <div className="footer-content">
