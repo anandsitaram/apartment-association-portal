@@ -4,10 +4,8 @@ process.env.DATABASE_URL = "test";
 process.env.SEED_FLATS = "true"; // these tests use the sample roster (server/flats-seed.js)
 process.env.DB_DRIVER = "neon"; // replaced by an in-memory Postgres (tests/neon-shim.js)
 process.env.ADMIN_PASSWORD = "adminpw1";
-process.env.AUTH_ENABLED = "true";
 
 const FLAGS = [
-  "PUBLIC_VIEW",
   "OWNER_VIEW",
   "AUDIT_LOG",
   "LOGIN_RATE_LIMIT",
@@ -56,6 +54,19 @@ const exp = [{ description: "Bescom", amount: 1000 }];
 beforeAll(async () => {
   handler = (await import("../api/app.js")).default;
   ({ runDaily } = await import("../server/jobs.js"));
+  // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create the
+  // "admin" account these tests run as, the same way a real deployment would.
+  const superToken = (await login("super-admin", "adminpw1")).body.token;
+  await call(
+    "POST",
+    {
+      action: "saveUser",
+      username: "admin",
+      password: "adminpw1",
+      role: "admin",
+    },
+    { token: superToken },
+  );
   admin = (await login("admin", "adminpw1")).body.token;
 });
 afterEach(() => {
@@ -116,29 +127,17 @@ describe("input validation", () => {
   });
 });
 
-describe("login required / public view", () => {
-  it("PUBLIC_VIEW=false requires login to view; default PUBLIC_VIEW opens read-only viewing without contact data", async () => {
-    process.env.PUBLIC_VIEW = "false";
+describe("login required", () => {
+  it("GET always requires login; there is no public/anonymous view", async () => {
     expect((await get()).code).toBe(401);
-    process.env.PUBLIC_VIEW = "true";
-    const r = await get();
-    expect(r.code).toBe(200);
-    expect(r.body.features).toMatchObject({ auth: true, publicView: true });
-    expect(
-      r.body.flats.every(
-        (f) => f.name === "" && !("phone" in f) && !("email" in f),
-      ),
-    ).toBe(true);
     expect(
       (await post({ action: "saveCorpRate", month: "2026-09", rate: 1 }, null))
         .code,
-    ).toBe(401); // edits still need a login
-  });
-  it("PUBLIC_VIEW is on by default, with no flags set", async () => {
-    const { features } = await import("../server/flags.js");
-    delete process.env.PUBLIC_VIEW;
-    expect(features().publicView).toBe(true);
-    process.env.PUBLIC_VIEW = "true";
+    ).toBe(401); // edits always needed a login too
+    const r = await get(admin);
+    expect(r.code).toBe(200);
+    expect(r.body.features).toMatchObject({ auth: true });
+    expect(r.body.features).not.toHaveProperty("publicView");
   });
 });
 
@@ -240,16 +239,23 @@ describe("flat contact details", () => {
       (x) => x.flat === "555-1BHK",
     );
     expect(row).toMatchObject({ name: "Renamed", phone, email });
-    process.env.PUBLIC_VIEW = "true";
-    const anon = (await get()).body.flats.find((x) => x.flat === "555-1BHK");
-    expect(anon).not.toHaveProperty("phone");
-    expect(anon).not.toHaveProperty("email");
+    // A logged-in but non-staff account never receives contact details.
+    await post({
+      action: "saveUser",
+      username: "contactviewer",
+      password: "viewer1234",
+      role: "user",
+    });
+    const viewerToken = (await login("contactviewer", "viewer1234")).body.token;
+    const asViewer = (await get(viewerToken)).body.flats.find(
+      (x) => x.flat === "555-1BHK",
+    );
+    expect(asViewer).not.toHaveProperty("phone");
+    expect(asViewer).not.toHaveProperty("email");
   });
 });
 
 describe("security", () => {
-  // GET stays 200 under PUBLIC_VIEW even for a signed-out token (it falls back to the anonymous view), so
-  // these check `me` in the snapshot rather than the status code.
   it("changing a password signs that user out everywhere: an old token stops working immediately", async () => {
     await post({
       action: "saveUser",
@@ -265,7 +271,7 @@ describe("security", () => {
       password: "secondpw34",
       role: "user",
     });
-    expect((await get(oldToken)).body.me).toBeNull(); // the token issued before the change no longer works
+    expect((await get(oldToken)).code).toBe(401); // the token issued before the change no longer works
     const newToken = (await login("sec1", "secondpw34")).body.token;
     expect((await get(newToken)).body.me?.name).toBe("sec1");
   });
@@ -289,7 +295,7 @@ describe("security", () => {
     });
     const t = (await login("sec3", "firstpw12")).body.token;
     await post({ action: "deleteUser", username: "sec3" });
-    expect((await get(t)).body.me).toBeNull();
+    expect((await get(t)).code).toBe(401);
   });
   it("Super Admin can restrict Admin accounts from deleting users", async () => {
     await post({
@@ -510,7 +516,7 @@ describe("backups", () => {
 });
 
 describe("cold start", () => {
-  it("skips the schema work when the version matches and still creates the admin when AUTH is switched on later", async () => {
+  it("skips the schema work when the version matches, and the built-in Super Admin login still works after every other account is gone", async () => {
     const { sql } = await import("../server/db.js");
     await sql.query("DELETE FROM users");
     vi.resetModules();
@@ -518,10 +524,23 @@ describe("cold start", () => {
     const { sql: freshSql } = await import("../server/db.js");
     const spy = vi.spyOn(freshSql, "query");
     handler = fresh;
-    const r = await login("admin", "adminpw1");
-    expect(r.code).toBe(200);
+    // No user rows exist any more, so only the built-in Super Admin
+    // (ADMIN_PASSWORD, never stored in the users table) can still log in.
+    const superToken = (await login("super-admin", "adminpw1")).body.token;
+    expect(superToken).toBeTruthy();
     const ddl = spy.mock.calls.filter(([t]) => /^\s*(CREATE|ALTER)/i.test(t));
     expect(ddl).toEqual([]); // schema already at the current version: no DDL on a cold start
-    admin = r.body.token;
+    // Re-create the "admin" account the rest of the file runs as.
+    await call(
+      "POST",
+      {
+        action: "saveUser",
+        username: "admin",
+        password: "adminpw1",
+        role: "admin",
+      },
+      { token: superToken },
+    );
+    admin = (await login("admin", "adminpw1")).body.token;
   });
 });

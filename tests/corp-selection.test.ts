@@ -35,6 +35,25 @@ const exp = [{ description: "Bescom", amount: 2500 }];
 
 beforeAll(async () => {
   handler = (await import("../api/app.js")).default;
+  // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create the
+  // "admin" account these tests run as, the same way a real deployment would.
+  const superToken = (
+    await call("POST", {
+      action: "login",
+      username: "super-admin",
+      password: "adminpw1",
+    })
+  ).body.token;
+  await call(
+    "POST",
+    {
+      action: "saveUser",
+      username: "admin",
+      password: "adminpw1",
+      role: "admin",
+    },
+    superToken,
+  );
   admin = (
     await call("POST", {
       action: "login",
@@ -199,8 +218,6 @@ describe("Corpus Fund ledger", () => {
       amount: 100,
     });
     expect((await get()).body.corpusLedger.length).toBeGreaterThan(0);
-    process.env.PUBLIC_VIEW = "true";
-    expect((await get(null)).body.corpusLedger).toEqual([]);
     await post({
       action: "saveUser",
       username: "view1",
@@ -215,7 +232,6 @@ describe("Corpus Fund ledger", () => {
       })
     ).body.token;
     expect((await get(t)).body.corpusLedger).toEqual([]);
-    delete process.env.PUBLIC_VIEW;
   });
 });
 
@@ -344,8 +360,8 @@ describe("schema upgrade", () => {
   });
 });
 
-describe("Corp Fund figures are visible to viewers and guests; the ledger is not", () => {
-  it("guests and viewers get Corp Fund paid and the rate; only admins get the Corpus Fund ledger", async () => {
+describe("Corp Fund figures are visible to viewers; the ledger is not", () => {
+  it("a viewer gets Corp Fund paid and the rate; only admins get the Corpus Fund ledger", async () => {
     await post({
       action: "saveMonth",
       month: "2027-03",
@@ -365,11 +381,6 @@ describe("Corp Fund figures are visible to viewers and guests; the ledger is not
       r.body.payments.find(
         (p) => p.month === "2027-03" && p.flat === "101-3BHK",
       );
-    const g = await get(null);
-    expect(g.body.months.find((m) => m.month === "2027-03").corp_rate).toBe(
-      0.7,
-    );
-    expect(pay(g)).toMatchObject({ maint: 100, corp: 250 });
     await post({
       action: "saveUser",
       username: "view2",
@@ -384,8 +395,12 @@ describe("Corp Fund figures are visible to viewers and guests; the ledger is not
         password: "viewer1234",
       })
     ).body.token;
-    expect(pay(await get(t))).toMatchObject({ corp: 250 });
-    expect((await get(t)).body.corpusLedger).toEqual([]);
+    const v = await get(t);
+    expect(v.body.months.find((m) => m.month === "2027-03").corp_rate).toBe(
+      0.7,
+    );
+    expect(pay(v)).toMatchObject({ corp: 250 });
+    expect(v.body.corpusLedger).toEqual([]);
     expect((await get()).body.corpusLedger.length).toBeGreaterThan(0);
   });
 });

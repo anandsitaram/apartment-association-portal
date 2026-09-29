@@ -5,7 +5,7 @@ process.env.SEED_FLATS = "true"; // these tests use the sample roster (server/fl
 process.env.DB_DRIVER = "neon"; // the neon module is replaced by an in-memory Postgres (tests/neon-shim.js)
 process.env.ADMIN_PASSWORD = "pw";
 
-let handler: any, token: any;
+let handler: any, token: any, superToken: any;
 const call = async (method: string, body?: any, tok: any = token) => {
   const out: { code?: number; body?: any } = {};
   const res = {
@@ -34,8 +34,31 @@ const exp = [
 
 beforeAll(async () => {
   handler = (await import("../api/app.js")).default;
+  // The built-in "super-admin" login (ADMIN_PASSWORD) is the only account that
+  // exists out of the box; every other account, including a plain "admin", has
+  // to be created through saveUser first, same as a real deployment would.
+  // (saveUser enforces a 6-character minimum, so the created account's
+  // password can't just reuse the 2-character ADMIN_PASSWORD used above.)
+  superToken = (
+    await post(
+      { action: "login", username: "super-admin", password: "pw" },
+      null,
+    )
+  ).body.token;
+  await post(
+    {
+      action: "saveUser",
+      username: "admin",
+      password: "adminpw1",
+      role: "admin",
+    },
+    superToken,
+  );
   token = (
-    await post({ action: "login", username: "admin", password: "pw" }, null)
+    await post(
+      { action: "login", username: "admin", password: "adminpw1" },
+      null,
+    )
   ).body.token;
 });
 
@@ -108,10 +131,33 @@ describe("column settings", () => {
 describe("flats", () => {
   it("is seeded once with the built-in list; non-admins get no owner names", async () => {
     const admin = (await get()).body.flats;
-    expect(admin.length).toBe(28);
-    expect(admin[0]).toMatchObject({ flat: "101-3BHK", name: "Alex Morgan" });
-    const viewer = (await get(null)).body.flats;
-    expect(viewer.length).toBe(28);
+    expect(admin.length).toBe(40); // 20 flats in Block A + 20 in Block C
+    expect(admin[0]).toMatchObject({
+      flat: "A-101",
+      block: "A",
+      name: "Alex Morgan",
+      type: "3BHK",
+    });
+    // Any logged-in non-staff account (a plain "user") gets no owner names.
+    await post({
+      action: "saveSettings",
+      settings: { allowUsersViewAllFlats: true },
+    });
+    await post({
+      action: "saveUser",
+      username: "plainviewer",
+      password: "viewerpw1",
+      role: "user",
+      flat: "A-101",
+    });
+    const viewerToken = (
+      await post(
+        { action: "login", username: "plainviewer", password: "viewerpw1" },
+        null,
+      )
+    ).body.token;
+    const viewer = (await get(viewerToken)).body.flats;
+    expect(viewer.length).toBe(40);
     expect(viewer.every((f) => f.name === "")).toBe(true);
   });
 
@@ -146,7 +192,7 @@ describe("flats", () => {
       expect((await post({ ...f, create: false, ...bad })).code).toBe(400);
   });
 
-  it("removes a flat but keeps its payments; the built-in list is not re-seeded", async () => {
+  it("removes a flat and its payment history together (tracked in the audit detail)", async () => {
     await post({
       action: "savePayment",
       month: "2026-09",
@@ -161,7 +207,9 @@ describe("flats", () => {
     ).toBe(true);
     let body = (await get()).body;
     expect(body.flats.find((x) => x.flat === "999-1BHK")).toBeUndefined();
-    expect(body.payments.some((p) => p.flat === "999-1BHK")).toBe(true);
+    // deleteFlat deliberately purges the flat's payment rows too (and audits
+    // how many it removed) rather than leaving orphaned payment history.
+    expect(body.payments.some((p) => p.flat === "999-1BHK")).toBe(false);
     for (const f of body.flats)
       await post({ action: "deleteFlat", flat: f.flat });
     // simulate a cold start: fresh module state, same database
@@ -198,7 +246,8 @@ describe("deleting a month keeps its Summary figures", () => {
       date: "2026-09-02",
     });
     expect(
-      (await post({ action: "deleteMonth", month: "2026-09" })).body.ok,
+      (await post({ action: "deleteMonth", month: "2026-09" }, superToken)).body
+        .ok,
     ).toBe(true);
     let body = (await get()).body;
     expect(body.months.find((m) => m.month === "2026-09")).toBeUndefined();
@@ -206,9 +255,10 @@ describe("deleting a month keeps its Summary figures", () => {
     expect(body.archive).toHaveLength(1);
     expect(body.archive[0].data.paid["101-3BHK"]).toBe(100);
     expect(body.archive[0].data.cpaid["101-3BHK"]).toBe(50);
-    expect((await post({ action: "deleteMonth", month: "2031-01" })).code).toBe(
-      404,
-    ); // no such month: nothing archived
+    expect(
+      (await post({ action: "deleteMonth", month: "2031-01" }, superToken))
+        .code,
+    ).toBe(404); // no such month: nothing archived
     expect((await get()).body.archive).toHaveLength(1);
     await post({ action: "saveMonth", month: "2026-09", expenses: exp });
     expect((await get()).body.archive).toHaveLength(0);

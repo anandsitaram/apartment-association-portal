@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import MonthTab from "../src/components/MonthTab.jsx";
-import Dashboard from "../src/components/Dashboard.jsx";
-import Flats from "../src/components/Flats.jsx";
-import MaintenanceSettings from "../src/components/MaintenanceSettings.jsx";
+import { MonthTab } from "../src/features/months/index.js";
+import Dashboard from "../src/features/dashboard/index.js";
+import Flats from "../src/features/flats/index.js";
+import MaintenanceSettings from "../src/features/settings/index.js";
 import Expenses from "../src/components/Expenses.jsx";
 
 const flats = [

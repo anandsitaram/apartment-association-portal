@@ -2,10 +2,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, createElement as h } from "react";
 import { createRoot } from "react-dom/client";
-import MonthTab from "../src/components/MonthTab.jsx";
+import { MonthTab } from "../src/features/months/index.js";
 import App from "../src/App.jsx";
-import Dashboard from "../src/components/Dashboard.jsx";
-import MaintenanceSettings from "../src/components/MaintenanceSettings.jsx";
+import Dashboard from "../src/features/dashboard/index.js";
+import MaintenanceSettings from "../src/features/settings/index.js";
 import Backup from "../src/components/Backup.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;

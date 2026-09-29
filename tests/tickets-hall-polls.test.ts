@@ -5,7 +5,11 @@ process.env.SEED_FLATS = "true";
 process.env.DB_DRIVER = "neon"; // replaced by an in-memory Postgres (tests/neon-shim.js)
 process.env.ADMIN_PASSWORD = "adminpw1";
 
-let handler: any, admin: any, viewerToken: any, plainAdminToken: any;
+let handler: any,
+  admin: any,
+  superToken: any,
+  viewerToken: any,
+  plainAdminToken: any;
 async function call(method: string, body?: any, token?: any) {
   const out: { code?: number; body?: any } = {};
   const res = {
@@ -34,6 +38,25 @@ const get = (token: any = admin) => call("GET", undefined, token);
 
 beforeAll(async () => {
   handler = (await import("../api/app.js")).default;
+  // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create the
+  // "admin" account these tests run as, the same way a real deployment would.
+  superToken = (
+    await call("POST", {
+      action: "login",
+      username: "super-admin",
+      password: "adminpw1",
+    })
+  ).body.token;
+  await call(
+    "POST",
+    {
+      action: "saveUser",
+      username: "admin",
+      password: "adminpw1",
+      role: "admin",
+    },
+    superToken,
+  );
   admin = (
     await call("POST", {
       action: "login",
@@ -330,7 +353,7 @@ describe("gym booking", () => {
 });
 
 describe("super admin identity", () => {
-  it("logs in as the built-in super admin via the new username (old alias still works)", async () => {
+  it('only the built-in "super-admin" username reaches Super Admin; the old "admin" alias is intentionally no longer accepted', async () => {
     const viaNewName = await call("POST", {
       action: "login",
       username: "super-admin",
@@ -341,14 +364,16 @@ describe("super admin identity", () => {
       role: "superadmin",
     });
 
-    const viaLegacyAlias = await call("POST", {
+    // "admin" is now an ordinary admin-role account (created in beforeAll),
+    // not an alias for the built-in Super Admin login.
+    const viaPlainAdminAccount = await call("POST", {
       action: "login",
       username: "admin",
       password: "adminpw1",
     });
-    expect(viaLegacyAlias.body.user).toMatchObject({
-      name: "super-admin",
-      role: "superadmin",
+    expect(viaPlainAdminAccount.body.user).toMatchObject({
+      name: "admin",
+      role: "admin",
     });
   });
 });
@@ -375,7 +400,7 @@ describe("super admin only actions", () => {
     expect(deniedForFlatUser.code).toBe(403);
     const allowed = await post(
       { action: "deleteTicket", id: ticket.id },
-      admin,
+      superToken,
     );
     expect(allowed.body.ok).toBe(true);
     expect(
@@ -389,12 +414,13 @@ describe("super admin only actions", () => {
       plainAdminToken,
     );
     expect(deniedForPlainAdmin.code).toBe(403);
-    const allowed = await post({ action: "clearAuditLog" }, admin);
+    const allowed = await post({ action: "clearAuditLog" }, superToken);
     expect(allowed.body.ok).toBe(true);
     // clearing the log is itself an audited action, so exactly one entry
     // (the clear itself) remains right after.
-    const entries = (await post({ action: "listAudit", limit: 200 }, admin))
-      .body.entries;
+    const entries = (
+      await post({ action: "listAudit", limit: 200 }, superToken)
+    ).body.entries;
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ action: "clearAuditLog" });
   });
@@ -545,9 +571,9 @@ describe("notifications hub", () => {
       plainAdminToken,
     );
     expect(deniedForPlainAdmin.code).toBe(403);
-    const allowed = await post({ action: "clearNotificationLogs" }, admin);
+    const allowed = await post({ action: "clearNotificationLogs" }, superToken);
     expect(allowed.body.ok).toBe(true);
-    expect((await get(admin)).body.notificationLogs).toEqual([]);
+    expect((await get(superToken)).body.notificationLogs).toEqual([]);
   });
 
   it("ENABLE_NOTIFICATION=false disables sending/clearing and reports the feature as off", async () => {
@@ -582,16 +608,16 @@ describe("notifications hub", () => {
 
 describe("users list visibility", () => {
   beforeAll(async () => {
-    // A super admin can promote another account to "super"; a plain admin
-    // must never learn that account exists via the Users tab.
-    await post(
-      {
-        action: "saveUser",
-        username: "secondsuper",
-        password: "supersuper1",
-        role: "super",
-      },
-      admin,
+    // The "super" role can't be created through saveUser any more (only the
+    // built-in "super-admin" account is meant to have that level of access);
+    // it still exists in the schema for databases upgraded from before that
+    // change, so insert one directly the way an old row would look, and
+    // confirm listUsers still correctly hides it from plain admins.
+    const { sql } = await import("../server/db.js");
+    const { hash } = await import("../server/auth.js");
+    await sql.query(
+      "INSERT INTO users(username, pass, role) VALUES($1, $2, 'super') ON CONFLICT(username) DO NOTHING",
+      ["secondsuper", hash("supersuper1")],
     );
   });
 
@@ -607,7 +633,7 @@ describe("users list visibility", () => {
   });
 
   it("a super admin sees every account, including other super admins", async () => {
-    const asSuperAdmin = (await post({ action: "listUsers" }, admin)).body
+    const asSuperAdmin = (await post({ action: "listUsers" }, superToken)).body
       .users;
     expect(
       asSuperAdmin.some(

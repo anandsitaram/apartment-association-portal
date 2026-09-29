@@ -24,6 +24,7 @@ import Dashboard from "./features/dashboard/index.js";
 import ToastHost from "./components/ui/ToastHost.jsx";
 import DialogHost from "./components/ui/DialogHost.jsx";
 import LoadingState from "./components/ui/LoadingState.jsx";
+import TableSkeleton from "./components/ui/TableSkeleton.jsx";
 import ErrorState from "./components/ui/ErrorState.jsx";
 import EmptyState from "./components/ui/EmptyState.jsx";
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
@@ -462,7 +463,6 @@ export default function App() {
     me: null,
     features: {
       auth: false,
-      publicView: false,
       audit: false,
       rateLimit: false,
       reminders: false,
@@ -614,7 +614,15 @@ export default function App() {
     data.features,
   ]);
 
-  // Block the browser back button / trackpad swipe-back so it doesn't leave the app by accident
+  // Block the browser back button / trackpad swipe-back so it doesn't leave the app by accident.
+  //
+  // Deliberate trade-off, not an oversight: this is a single-page app with no
+  // in-app "pages" to go back to (section switches don't push history entries),
+  // so a stray back-swipe would otherwise exit straight to whatever the browser
+  // had open before this tab, which on a shared/lobby device could leave a
+  // signed-in session sitting there. This intentionally overrides normal
+  // browser back-button behavior app-wide; please don't "fix" it without
+  // re-checking that reasoning first.
   useEffect(() => {
     history.pushState({ rv: 1 }, "", location.href);
     const onPop = () => history.pushState({ rv: 1 }, "", location.href);
@@ -674,11 +682,14 @@ export default function App() {
     try {
       await call(body, token);
       await load(section, true);
-      setMsg("");
       notify("Saved", "success");
       return true;
     } catch (e) {
-      setMsg(errText(e));
+      // Action-level failures go through the same toast the success path
+      // uses, instead of the shared `msg` banner: `msg` is reserved for
+      // "the whole page failed to load" / login-screen errors, so a save
+      // failure here can't silently overwrite or get overwritten by those.
+      notify(errText(e), "error");
       if (/Login required/.test(errText(e))) {
         logout();
         load();
@@ -824,7 +835,7 @@ export default function App() {
       );
     }
     if (NEEDS_SCREEN_DATA.has(section) && !loaded) {
-      return <LoadingState label="Loading…" />;
+      return <TableSkeleton label="Loading…" />;
     }
     if (
       section === "months" &&
@@ -833,7 +844,7 @@ export default function App() {
           currentMonth &&
           data.paymentsMonth !== currentMonth.month))
     ) {
-      return <LoadingState label="Loading maintenance records…" />;
+      return <TableSkeleton label="Loading maintenance records…" />;
     }
     if (section === "months" && msg && !data.months.length) {
       return (
@@ -1244,7 +1255,7 @@ export default function App() {
                   try {
                     await exportCurrentPage(section, data, token);
                   } catch (e) {
-                    setMsg(`Export failed: ${errText(e)}`);
+                    notify(`Export failed: ${errText(e)}`, "error");
                   } finally {
                     setExporting(false);
                   }

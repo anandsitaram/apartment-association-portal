@@ -27,7 +27,6 @@ export const ENABLE_NOTIFICATION = () => on("ENABLE_NOTIFICATION");
 
 export const features = () => ({
   auth: AUTH(),
-  publicView: false,
   audit: AUDIT_LOG(),
   rateLimit: LOGIN_RATE_LIMIT(),
   reminders: REMINDERS(),

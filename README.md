@@ -118,24 +118,22 @@ After changing `.env.local`, restart `npm run dev`. On Vercel, environment-varia
 Everything else is behind an environment variable, so you can switch features on **one at a time**: change the variable in Vercel
 (Settings → Environment Variables) and redeploy. Values that count as on: `1`, `true`, `on`, `yes`.
 
-| Flag                 | What it does                                                                                                                                                                                                                                |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| legacy `VIEWER`      | Default **on**: the app opens straight to read-only public data, no login required. Set to `false` to show the login screen immediately and require everyone to log in. (`PUBLIC_VIEW` is the old name for this same flag and still works.) |
-| legacy `VIEWER_VIEW` | Default **on**: a logged-in viewer linked to a flat (USERS tab) sees only that flat's row. Set to `false` so users instead see every flat's amounts read-only (no names). (`OWNER_VIEW` is the old name and still works.)                   |
-| `LOGIN_RATE_LIMIT`   | Default **on**: locks a login for 15 minutes after 5 wrong passwords for the same user + IP (or 20 per IP). A correct password clears the user + IP counter. Set to `false` to turn off.                                                    |
-| `AUDIT_LOG`          | Default **on**: records who changed what (payments with old → new values, months, flats, settings, users, backups, reminders). Super admins read it in TOOLS → Audit log. Set to `false` to turn off.                                       |
-| `REMINDERS`          | Off by default. TOOLS → Reminders: pending dues per flat with WhatsApp / e-mail / copy buttons. Bulk e-mail sending also needs `RESEND_API_KEY` + `MAIL_FROM`.                                                                              |
-| `AUTO_BACKUP`        | Off by default. A daily job keeps a backup in the database (last 14; `BACKUP_KEEP` changes that). If `RESEND_API_KEY`, `MAIL_FROM` and `BACKUP_EMAIL` are set, the Monday backup is e-mailed as a file.                                     |
-| `TICKETS`            | Default **on**: the TICKETS tab (delivery/security/maintenance requests + MC approval). Set to `false` to hide it entirely.                                                                                                                 |
-| `HALL_BOOKING`       | Default **on**: the PARTY HALL tab (calendar booking with automatic conflict prevention). Set to `false` to hide it.                                                                                                                        |
-| `POLLS`              | Default **on**: the CANVAS / POLLS tab. Set to `false` to hide it.                                                                                                                                                                          |
+| Flag                 | What it does                                                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| legacy `VIEWER_VIEW` | Default **on**: a logged-in viewer linked to a flat (USERS tab) sees only that flat's row. Set to `false` so users instead see every flat's amounts read-only (no names). (`OWNER_VIEW` is the old name and still works.) |
+| `LOGIN_RATE_LIMIT`   | Default **on**: locks a login for 15 minutes after 5 wrong passwords for the same user + IP (or 20 per IP). A correct password clears the user + IP counter. Set to `false` to turn off.                                  |
+| `AUDIT_LOG`          | Default **on**: records who changed what (payments with old → new values, months, flats, settings, users, backups, reminders). Super admins read it in TOOLS → Audit log. Set to `false` to turn off.                     |
+| `REMINDERS`          | Off by default. TOOLS → Reminders: pending dues per flat with WhatsApp / e-mail / copy buttons. Bulk e-mail sending also needs `RESEND_API_KEY` + `MAIL_FROM`.                                                            |
+| `AUTO_BACKUP`        | Off by default. A daily job keeps a backup in the database (last 14; `BACKUP_KEEP` changes that). If `RESEND_API_KEY`, `MAIL_FROM` and `BACKUP_EMAIL` are set, the Monday backup is e-mailed as a file.                   |
+| `TICKETS`            | Default **on**: the TICKETS tab (delivery/security/maintenance requests + MC approval). Set to `false` to hide it entirely.                                                                                               |
+| `HALL_BOOKING`       | Default **on**: the PARTY HALL tab (calendar booking with automatic conflict prevention). Set to `false` to hide it.                                                                                                      |
+| `POLLS`              | Default **on**: the CANVAS / POLLS tab. Set to `false` to hide it.                                                                                                                                                        |
 
 **Getting started**
 
 1. Set `ADMIN_PASSWORD` on Vercel and redeploy. Log in as `super-admin` with that password — you're Super Admin, no other setup needed.
 2. Open USERS and create Admin / User accounts for everyone else. Link each User to their flat.
 3. `LOGIN_RATE_LIMIT` and `AUDIT_LOG` are already on; optionally also turn on `AUTO_BACKUP` and set `CRON_SECRET`.
-4. If you'd rather nobody browse anonymously, set `VIEWER=false`.
 
 ### 3b. Reminders, audit log, backups
 
@@ -151,7 +149,7 @@ Everything else is behind an environment variable, so you can switch features on
 | Admin       | User rights + enter payments, edit expenses/calculation, add months, **Clear all amounts** (clears expense amounts and that month's payment amounts; descriptions/settings stay); approve/reject tickets and hall bookings, create and close polls |
 | Super admin | Admin rights + **Delete month** (month and all its amounts) + **USERS** tab (create users, set role, reset password, delete) + delete tickets/polls                                                                                                |
 
-- Passwords are hashed (scrypt); login lasts 30 days; a deleted user loses access immediately. Login is required to view unless legacy `VIEWER` is on (the default).
+- Passwords are hashed (scrypt); login lasts 30 days; a deleted user loses access immediately. Login is always required — there is no public/anonymous view.
 - Users see every flat's amounts (view-only, no names) unless legacy `VIEWER_VIEW` is on (the default) and their login is linked to a flat.
 - Only admins see the audit log and backups.
 - Super Admin is the built-in `super-admin` login (password = `ADMIN_PASSWORD`) — it's never a row in the `users` table and isn't created or edited from USERS. The legacy username `admin` is no longer accepted; use `super-admin`.
@@ -210,7 +208,7 @@ Database tables (created automatically): `months(month, expenses jsonb, divisor,
 | `DB_SSL`, `DB_RLS`            | Optional: `off` disables SSL / row-level security (only for a local database).                                                                     |
 | `ADMIN_PASSWORD`              | Password for the built-in Super Admin login (username `super-admin`, no legacy alias); also signs login tokens by default                          |
 | `AUTH_SECRET`                 | Optional. Separate token-signing secret (defaults to `ADMIN_PASSWORD`)                                                                             |
-| feature flags                 | legacy `VIEWER`, legacy `VIEWER_VIEW`, `LOGIN_RATE_LIMIT`, `AUDIT_LOG`, `REMINDERS`, `AUTO_BACKUP` (section 3)                                     |
+| feature flags                 | legacy `VIEWER_VIEW`, `LOGIN_RATE_LIMIT`, `AUDIT_LOG`, `REMINDERS`, `AUTO_BACKUP` (section 3)                                                      |
 | `RESEND_API_KEY`, `MAIL_FROM` | Optional. E-mail sending (reminders, weekly backup). `MAIL_FROM` example: `Owners Association <no-reply@yourdomain>` (a domain verified in Resend) |
 | `BACKUP_EMAIL`, `BACKUP_KEEP` | Optional. Where the Monday backup is e-mailed; how many daily backups to keep (default 14)                                                         |
 | `CRON_SECRET`                 | Optional but recommended. Vercel then sends it with the daily job and `/api/cron` refuses anything else                                            |
@@ -279,7 +277,7 @@ Local runs use the same Neon database as the live site.
 
 ## 10. API (single endpoint `/api/app`)
 
-`GET` returns months, payments, flats, settings, feature flags and the current user (login required unless legacy `VIEWER` is on, the default). `POST` actions:
+`GET` returns months, payments, flats, settings, feature flags and the current user (login is always required). `POST` actions:
 
 | Action                                                                                                                   | Who          |
 | ------------------------------------------------------------------------------------------------------------------------ | ------------ |

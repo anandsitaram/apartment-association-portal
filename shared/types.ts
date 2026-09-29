@@ -143,7 +143,6 @@ export interface LedgerEntry {
 
 export interface Features {
   auth: boolean;
-  publicView: boolean;
   audit: boolean;
   rateLimit: boolean;
   reminders: boolean;

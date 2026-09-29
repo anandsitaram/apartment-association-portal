@@ -84,8 +84,33 @@ describe("app on the pg driver", () => {
       );
       return out;
     };
+    // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create
+    // the "admin" account this test runs as, the same way a real deployment
+    // would. (saveUser enforces a 6-character minimum, so this can't reuse
+    // the 2-character ADMIN_PASSWORD used for the super-admin login above.)
+    const superToken = (
+      await call("POST", {
+        action: "login",
+        username: "super-admin",
+        password: "pw",
+      })
+    ).body.token;
+    await call(
+      "POST",
+      {
+        action: "saveUser",
+        username: "admin",
+        password: "adminpw1",
+        role: "admin",
+      },
+      superToken,
+    );
     const token = (
-      await call("POST", { action: "login", username: "admin", password: "pw" })
+      await call("POST", {
+        action: "login",
+        username: "admin",
+        password: "adminpw1",
+      })
     ).body.token;
     expect(
       (

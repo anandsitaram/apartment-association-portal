@@ -66,7 +66,7 @@ async function main() {
   }
 
   const existingUsers = await sql.query("SELECT username FROM users");
-  const demoUserIds = new Set(demoAccounts.map((u) => u.username));
+  const demoUserIds = new Set<string>(demoAccounts.map((u) => u.username));
   const unexpectedUsers = existingUsers.filter(
     (u) => !demoUserIds.has(String(u.username)),
   );
