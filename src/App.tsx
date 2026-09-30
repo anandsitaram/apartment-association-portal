@@ -822,6 +822,15 @@ export default function App() {
 
   const renderContent = () => {
     if (!visibleNav.some((n) => n.id === section)) {
+      if (msg && !data.months.length) {
+        return (
+          <ErrorState
+            title="Could not load your data"
+            message={msg}
+            onRetry={() => load()}
+          />
+        );
+      }
       return (
         <Dashboard
           data={data}
@@ -846,12 +855,16 @@ export default function App() {
     ) {
       return <TableSkeleton label="Loading maintenance records…" />;
     }
-    if (section === "months" && msg && !data.months.length) {
+    if (
+      (section === "months" || section === "dashboard") &&
+      msg &&
+      !data.months.length
+    ) {
       return (
         <ErrorState
-          title="Could not load months"
+          title="Could not load your data"
           message={msg}
-          onRetry={() => load("months")}
+          onRetry={() => load(section)}
         />
       );
     }
