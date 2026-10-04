@@ -1,6 +1,7 @@
 # RV Fallon mobile fixes
 
 ## Updated in this package
+
 - Removed the visible Server Settings control from the login screen.
 - Added the RV purple application mark to the login screen.
 - Removed the configured server URL from the About section.
@@ -12,6 +13,7 @@
 - Replaced the green mobile launcher artwork with the RV purple/white brand icon for Android and iOS app icon assets.
 
 ## Verification and remaining QA
+
 - TypeScript syntax transpilation passed for the changed mobile screens.
 - Camera access still requires a real-device check after rebuilding/reinstalling the app; users who previously denied camera access may need to enable it in OS Settings.
 - Full dependency-backed type checking, Android/iOS native builds, runtime billing recalculation, and end-to-end booking deletion have not been run in this environment.

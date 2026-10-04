@@ -10,7 +10,9 @@ let active: AppDialogState | null = null;
 export const subscribeAppDialog = (listener: Listener) => {
   listeners.add(listener);
   listener(active);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 };
 export const showAppDialog = (title: string, message = '', buttons?: AppDialogButton[]) => {
   active = { title, message, buttons: buttons?.length ? buttons : [{ text: 'OK' }] };

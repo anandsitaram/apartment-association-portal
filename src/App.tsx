@@ -28,7 +28,11 @@ import NavIcon from "./components/NavIcon.js";
 import { EXPORTABLE, NAV, ROLE_LABEL } from "../shared/navigation.js";
 import { isAdminRole, isSuperRole } from "../shared/roles.js";
 import { clearSession, readSession, writeSession } from "./session-storage.js";
-import { readBrowserStorage, removeBrowserStorage, writeBrowserStorage } from "./safe-storage.js";
+import {
+  readBrowserStorage,
+  removeBrowserStorage,
+  writeBrowserStorage,
+} from "./safe-storage.js";
 
 // Code-split every page/panel that isn't needed for the very first paint
 // (Dashboard + Login + Months are the common landing views and stay eager).
@@ -1082,14 +1086,19 @@ export default function App() {
       <ToastHost />
       <DialogHost />
       {showDemoNotice && auth && (
-        <div className="modal-backdrop demo-notice-backdrop" role="presentation">
+        <div
+          className="modal-backdrop demo-notice-backdrop"
+          role="presentation"
+        >
           <section
             className="card modal demo-notice-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="demo-notice-title"
           >
-            <div className="confirm-dialog-icon" aria-hidden="true">i</div>
+            <div className="confirm-dialog-icon" aria-hidden="true">
+              i
+            </div>
             <h2 id="demo-notice-title">Welcome to the Demo App!</h2>
             <p>
               This Apartment Association Portal is intended for demonstration
@@ -1339,7 +1348,7 @@ export default function App() {
             </span>
             <span className="footer-contact">
               If you have any questions, reach out to us at{" "}
-              <a href="mailto:aisdsdsd@gmail.com">aisdsdsd@gmail.com</a>
+              <a href="mailto:aiintechlabs@gmail.com">aiintechlabs@gmail.com</a>
             </span>
             <button
               type="button"

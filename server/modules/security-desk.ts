@@ -77,8 +77,15 @@ export const actions: Record<string, Action> = {
       }
       // Visitor identity and access codes are strictly owner-managed. Admin
       // privileges do not grant access to another flat's visitor details.
-      if (ctx.me.role !== "user" || !ctx.me.flat || normalizeFlat(String(ctx.me.flat)) !== normalizeFlat(flat)) {
-        fail(403, "Only the linked flat owner can create visitor access codes for their own flat.");
+      if (
+        ctx.me.role !== "user" ||
+        !ctx.me.flat ||
+        normalizeFlat(String(ctx.me.flat)) !== normalizeFlat(flat)
+      ) {
+        fail(
+          403,
+          "Only the linked flat owner can create visitor access codes for their own flat.",
+        );
       }
       let code = "";
       for (let i = 0; i < 5; i++) {
@@ -98,7 +105,15 @@ export const actions: Record<string, Action> = {
         `INSERT INTO security_access_codes(code, visitor_name, flat, phone, purpose, visit_at, created_by, expires_at)
          VALUES($1,$2,$3,$4,$5,$6,$7,now() + interval '24 hours')
          RETURNING id, code, visitor_name, flat, phone, purpose, visit_at, status, created_by, created_at, expires_at, accepted_by, accepted_at`,
-        [code, encryptData(visitorName), flat, phone ? encryptData(phone) : "", encryptData(purpose), visitAt, ctx.me.username],
+        [
+          code,
+          encryptData(visitorName),
+          flat,
+          phone ? encryptData(phone) : "",
+          encryptData(purpose),
+          visitAt,
+          ctx.me.username,
+        ],
       );
       ctx.audit = {
         target: "security-access-code",
@@ -114,9 +129,13 @@ export const actions: Record<string, Action> = {
       if (!Number.isSafeInteger(id) || id <= 0)
         fail(400, "Invalid visitor code");
       if (ctx.me.role !== "user" || !ctx.me.flat) {
-        fail(403, "Only the linked flat owner can delete their own visitor access codes.");
+        fail(
+          403,
+          "Only the linked flat owner can delete their own visitor access codes.",
+        );
       }
-      const normalizeFlat = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normalizeFlat = (value: string) =>
+        value.toLowerCase().replace(/[^a-z0-9]/g, "");
       const [deleted] = await sql.query(
         `DELETE FROM security_access_codes
          WHERE id=$1 AND created_by=$2
@@ -153,10 +172,18 @@ export const actions: Record<string, Action> = {
            AND EXISTS (SELECT 1 FROM visitor_photo_requests r WHERE r.access_code_id=c.id AND r.status='approved')`,
         [code],
       );
-      if (!updated) fail(400, "This visitor has not been approved by the flat owner. Use the QR scan and photo approval workflow first.");
+      if (!updated)
+        fail(
+          400,
+          "This visitor has not been approved by the flat owner. Use the QR scan and photo approval workflow first.",
+        );
       ctx.audit = {
         target: "security-access-code",
-        detail: { id: updated.id, flat: updated.flat, action: "approved-entry-verified" },
+        detail: {
+          id: updated.id,
+          flat: updated.flat,
+          action: "approved-entry-verified",
+        },
       };
       return { accepted: updated };
     },

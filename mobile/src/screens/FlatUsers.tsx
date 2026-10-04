@@ -89,7 +89,13 @@ export default function FlatUsers({ data, save, token }: ScreenProps) {
         <Text style={s.label}>Flat</Text>
         <View style={s.rowWrap}>
           {data.flats.map((f) => (
-            <Button key={f.flat} title={f.flat} kind={flat === f.flat ? 'primary' : 'secondary'} onPress={() => setFlat(f.flat)} fullWidth={false} />
+            <Button
+              key={f.flat}
+              title={f.flat}
+              kind={flat === f.flat ? 'primary' : 'secondary'}
+              onPress={() => setFlat(f.flat)}
+              fullWidth={false}
+            />
           ))}
         </View>
         <Field label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />

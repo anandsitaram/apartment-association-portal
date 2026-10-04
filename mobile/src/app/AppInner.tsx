@@ -1,5 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, BackHandler, Modal, Pressable, RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import {
+  AppState,
+  BackHandler,
+  Modal,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {
   Calendar,
   ClipboardList,
@@ -27,6 +39,7 @@ import {
 import type { ActionBody, Data } from '../../../shared/types';
 import { APP_BRAND_NAME } from '../../../shared/branding';
 import { call, errText, isAuthError, setApiBase } from '../core/api';
+import { DEFAULT_API_BASE_URL } from '../core/config';
 import { isAdminRole, isSuperRole } from '../../../shared/roles';
 import { MobilePage, availablePages, splitTabs } from '../core/pages';
 import { Button, ErrorState, Loading } from '../components';
@@ -40,9 +53,12 @@ import {
   readMonth,
   readServer,
   readSession,
+  readApiServerVersion,
   saveAppLock,
   writeMonth,
   writeSession,
+  writeApiServerVersion,
+  writeServer,
 } from '../services';
 import Login from '../screens/Login';
 import Dashboard from '../screens/Dashboard';
@@ -152,12 +168,29 @@ export default function AppInner() {
     let active = true;
     (async () => {
       try {
-        const [a, server, lock, m] = await Promise.all([readSession(), readServer(), loadAppLock(), readMonth()]);
+        const [a, server, lock, m, serverVersion] = await Promise.all([
+          readSession(),
+          readServer(),
+          loadAppLock(),
+          readMonth(),
+          readApiServerVersion(),
+        ]);
         if (!active) return;
-        if (server) setApiBase(server);
+
+        // This mobile app belongs to the Apartment Association Portal, not the
+        // RV Fallon deployment. On upgrade, clear any saved RV Fallon server
+        // override and its session token so RV Fallon data cannot be loaded.
+        const needsServerMigration = serverVersion !== DEFAULT_API_BASE_URL;
+        if (needsServerMigration) {
+          await Promise.all([clearSession(), writeServer(''), writeApiServerVersion(DEFAULT_API_BASE_URL)]);
+          setApiBase(DEFAULT_API_BASE_URL);
+        } else {
+          setApiBase(server || DEFAULT_API_BASE_URL);
+        }
+
         setAppLockState(lock);
         setMonth(m);
-        if (a) {
+        if (a && !needsServerMigration) {
           setAuth(a);
           setLocked(lock.mode !== 'off');
         }
@@ -228,23 +261,29 @@ export default function AppInner() {
     const checkParcelNotices = async () => {
       try {
         const result = await call<{ notices?: Array<{ id: number; flat: string; courier?: string; status: string }> }>(
-          { action: 'listPendingParcelNotifications' }, token,
+          { action: 'listPendingParcelNotifications' },
+          token,
         );
         if (!active) return;
         const notices = result.notices ?? [];
         const pending = notices.filter((notice) => notice.status === 'pending');
-        const unseen = firstCheck
-          ? pending
-          : pending.filter((notice) => !parcelNoticeIds.current.has(notice.id));
+        const unseen = firstCheck ? pending : pending.filter((notice) => !parcelNoticeIds.current.has(notice.id));
         notices.forEach((notice) => parcelNoticeIds.current.add(notice.id));
         if (unseen.length) {
           const first = unseen[0];
-          const summary = unseen.length === 1
-            ? `A parcel for flat ${first.flat}${first.courier ? ` from ${first.courier}` : ''} is awaiting collection.`
-            : `${unseen.length} parcels are awaiting collection, including flat ${first.flat}.`;
+          const summary =
+            unseen.length === 1
+              ? `A parcel for flat ${first.flat}${first.courier ? ` from ${first.courier}` : ''} is awaiting collection.`
+              : `${unseen.length} parcels are awaiting collection, including flat ${first.flat}.`;
           showAppDialog('Parcel delivery notification', `${summary} Open the parcel details to view the photo and collection options.`, [
             { text: 'Later', style: 'cancel' },
-            { text: 'View parcel details', onPress: () => { setSelectedParcelNoticeId(first.id); setPage('visitor-access'); } },
+            {
+              text: 'View parcel details',
+              onPress: () => {
+                setSelectedParcelNoticeId(first.id);
+                setPage('visitor-access');
+              },
+            },
           ]);
         }
         firstCheck = false;
@@ -437,7 +476,9 @@ export default function AppInner() {
       case 'security-desk':
         return <SecurityDesk {...props} />;
       case 'visitor-access':
-        return <VisitorAccess {...props} parcelNoticeId={selectedParcelNoticeId} onClearParcelNotice={() => setSelectedParcelNoticeId(null)} />;
+        return (
+          <VisitorAccess {...props} parcelNoticeId={selectedParcelNoticeId} onClearParcelNotice={() => setSelectedParcelNoticeId(null)} />
+        );
       case 'contact':
         return <Contact {...props} />;
       case 'contact-submissions':
@@ -492,14 +533,52 @@ export default function AppInner() {
         </View>
       )}
       <Modal visible={!!dialog} transparent animationType="fade" onRequestClose={dismissAppDialog}>
-        <Pressable onPress={dismissAppDialog} style={{ flex: 1, backgroundColor: 'rgba(20,12,40,0.48)', justifyContent: 'center', padding: 24 }}>
-          <Pressable onPress={() => undefined} style={{ backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: BORDER, padding: 20, width: '100%', maxWidth: 440, alignSelf: 'center' }}>
+        <Pressable
+          onPress={dismissAppDialog}
+          style={{ flex: 1, backgroundColor: 'rgba(20,12,40,0.48)', justifyContent: 'center', padding: 24 }}
+        >
+          <Pressable
+            onPress={() => undefined}
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: BORDER,
+              padding: 20,
+              width: '100%',
+              maxWidth: 440,
+              alignSelf: 'center',
+            }}
+          >
             <Text style={{ fontSize: 18, fontWeight: '700', color: DARK }}>{dialog?.title}</Text>
             {!!dialog?.message && <Text style={{ fontSize: 14, color: MUTED, marginTop: 10, lineHeight: 20 }}>{dialog.message}</Text>}
             <View style={{ marginTop: 18, gap: 8 }}>
               {(dialog?.buttons ?? []).map((button, index) => (
-                <TouchableOpacity key={`${button.text}-${index}`} onPress={() => { dismissAppDialog(); void button.onPress?.(); }} style={{ borderRadius: 10, borderWidth: 1.5, borderColor: button.style === 'destructive' ? BAD : button.style === 'cancel' ? BORDER : GREEN, backgroundColor: button.style === 'destructive' ? '#fff7f6' : button.style === 'cancel' ? '#fff' : GREEN, paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center' }}>
-                  <Text style={{ color: button.style === 'destructive' ? BAD : button.style === 'cancel' ? MUTED : '#fff', fontWeight: '700', fontSize: 15 }}>{button.text}</Text>
+                <TouchableOpacity
+                  key={`${button.text}-${index}`}
+                  onPress={() => {
+                    dismissAppDialog();
+                    void button.onPress?.();
+                  }}
+                  style={{
+                    borderRadius: 10,
+                    borderWidth: 1.5,
+                    borderColor: button.style === 'destructive' ? BAD : button.style === 'cancel' ? BORDER : GREEN,
+                    backgroundColor: button.style === 'destructive' ? '#fff7f6' : button.style === 'cancel' ? '#fff' : GREEN,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: button.style === 'destructive' ? BAD : button.style === 'cancel' ? MUTED : '#fff',
+                      fontWeight: '700',
+                      fontSize: 15,
+                    }}
+                  >
+                    {button.text}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>

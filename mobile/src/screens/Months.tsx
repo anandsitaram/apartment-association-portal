@@ -38,7 +38,9 @@ export default function Months({
   const [reminding, setReminding] = useState(false);
   const [expandedCarry, setExpandedCarry] = useState(false);
   const [receiptFlat, setReceiptFlat] = useState<{ flat: Flat; dues: FlatDues; payment?: Payment } | null>(null);
-  const [expenseDraft, setExpenseDraft] = useState<Expense[]>((month?.expenses || []).map((e) => ({ description: e.description || '', amount: Number(e.amount) || 0 })));
+  const [expenseDraft, setExpenseDraft] = useState<Expense[]>(
+    (month?.expenses || []).map((e) => ({ description: e.description || '', amount: Number(e.amount) || 0 })),
+  );
   const [savingExpenses, setSavingExpenses] = useState(false);
   const [exportingMonth, setExportingMonth] = useState(false);
 
@@ -63,22 +65,25 @@ export default function Months({
     if (!admin || locked) return;
     const value = calcMethod === 'divide' ? data.flats.length : Math.max(0, Number(calcValue) || 0);
     const corp = Math.max(0, Number(corpRate) || 0);
-    const ok = await save({
-      action: 'saveMonth',
-      month: month.month,
-      expenses: month.expenses || [],
-      method: calcMethod,
-      value,
-      rounding: calcRounding,
-      corpApplicable,
-      corpMethod,
-      corpRate: corp,
-      corpValue: corp,
-      corpRounding,
-      calculatedExpenseTotal: total(month),
-      notes: { ...(month.notes || {}), expensesStage: 'actual' },
-      recalculate: true,
-    }, 'Maintenance calculation saved');
+    const ok = await save(
+      {
+        action: 'saveMonth',
+        month: month.month,
+        expenses: month.expenses || [],
+        method: calcMethod,
+        value,
+        rounding: calcRounding,
+        corpApplicable,
+        corpMethod,
+        corpRate: corp,
+        corpValue: corp,
+        corpRounding,
+        calculatedExpenseTotal: total(month),
+        notes: { ...(month.notes || {}), expensesStage: 'actual' },
+        recalculate: true,
+      },
+      'Maintenance calculation saved',
+    );
     if (ok) setEditingCalculation(false);
   };
 
@@ -93,20 +98,29 @@ export default function Months({
     try {
       const expectedStage = month.notes?.expensesStage !== 'actual';
       const draftTotal = expenseDraft.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-      const ok = await save({
-        action: 'saveMonth', month: month.month,
-        expenses: expenseDraft.map((row) => ({ description: row.description.trim(), amount: Number(row.amount) || 0 })),
-        method: expectedStage ? calcMethod : (month.method || 'divide'),
-        value: expectedStage ? (calcMethod === 'divide' ? data.flats.length : Math.max(0, Number(calcValue) || 0)) : (month.value ?? data.flats.length),
-        rounding: expectedStage ? calcRounding : (month.rounding || 'none'),
-        corpApplicable: expectedStage ? corpApplicable : month.corp_applicable === true,
-        corpMethod: expectedStage ? corpMethod : (month.corp_method || 'sqft'),
-        corpRate: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
-        corpValue: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
-        corpRounding: expectedStage ? corpRounding : (month.corp_rounding || 'nearest'),
-        calculatedExpenseTotal: expectedStage ? draftTotal : (month.calculated_expense_total ?? total(month)),
-        notes: { ...(month.notes || {}), expensesStage: 'actual' }, recalculate: expectedStage,
-      }, expectedStage ? 'Expenses saved and maintenance recalculated' : 'Actual expenses saved');
+      const ok = await save(
+        {
+          action: 'saveMonth',
+          month: month.month,
+          expenses: expenseDraft.map((row) => ({ description: row.description.trim(), amount: Number(row.amount) || 0 })),
+          method: expectedStage ? calcMethod : month.method || 'divide',
+          value: expectedStage
+            ? calcMethod === 'divide'
+              ? data.flats.length
+              : Math.max(0, Number(calcValue) || 0)
+            : (month.value ?? data.flats.length),
+          rounding: expectedStage ? calcRounding : month.rounding || 'none',
+          corpApplicable: expectedStage ? corpApplicable : month.corp_applicable === true,
+          corpMethod: expectedStage ? corpMethod : month.corp_method || 'sqft',
+          corpRate: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
+          corpValue: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
+          corpRounding: expectedStage ? corpRounding : month.corp_rounding || 'nearest',
+          calculatedExpenseTotal: expectedStage ? draftTotal : (month.calculated_expense_total ?? total(month)),
+          notes: { ...(month.notes || {}), expensesStage: 'actual' },
+          recalculate: expectedStage,
+        },
+        expectedStage ? 'Expenses saved and maintenance recalculated' : 'Actual expenses saved',
+      );
       if (!ok) setExpenseDraft((month.expenses || []).map((e) => ({ description: e.description || '', amount: Number(e.amount) || 0 })));
     } finally {
       setSavingExpenses(false);
@@ -117,16 +131,30 @@ export default function Months({
     if (!superAdmin || locked) return;
     showAppDialog('Reset maintenance calculation?', 'Billing settings will become editable again. Existing payments will not be deleted.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset calculation', style: 'destructive', onPress: () => {
-        void save({
-          action: 'saveMonth', month: month.month, expenses: month.expenses || [],
-          method: month.method || 'divide', value: month.value ?? data.flats.length,
-          rounding: month.rounding || 'none', corpApplicable: month.corp_applicable === true,
-          corpMethod: month.corp_method || 'sqft', corpRate: month.corp_value ?? month.corp_rate ?? 0.5,
-          corpValue: month.corp_value ?? month.corp_rate ?? 0.5, corpRounding: month.corp_rounding || 'nearest',
-          notes: { ...(month.notes || {}), expensesStage: 'expected' }, recalculate: false,
-        }, 'Maintenance calculation reset');
-      } },
+      {
+        text: 'Reset calculation',
+        style: 'destructive',
+        onPress: () => {
+          void save(
+            {
+              action: 'saveMonth',
+              month: month.month,
+              expenses: month.expenses || [],
+              method: month.method || 'divide',
+              value: month.value ?? data.flats.length,
+              rounding: month.rounding || 'none',
+              corpApplicable: month.corp_applicable === true,
+              corpMethod: month.corp_method || 'sqft',
+              corpRate: month.corp_value ?? month.corp_rate ?? 0.5,
+              corpValue: month.corp_value ?? month.corp_rate ?? 0.5,
+              corpRounding: month.corp_rounding || 'nearest',
+              notes: { ...(month.notes || {}), expensesStage: 'expected' },
+              recalculate: false,
+            },
+            'Maintenance calculation reset',
+          );
+        },
+      },
     ]);
   };
 
@@ -174,7 +202,9 @@ export default function Months({
               );
               showAppDialog(
                 'Reminders sent',
-                r.sentCount ? `Reminder sent to ${r.sentCount} flat(s).` : 'No reminders were sent (no unpaid flats or missing contact info).',
+                r.sentCount
+                  ? `Reminder sent to ${r.sentCount} flat(s).`
+                  : 'No reminders were sent (no unpaid flats or missing contact info).',
               );
             } catch (e) {
               showAppDialog('Error', errText(e));
@@ -316,8 +346,15 @@ export default function Months({
     <View>
       {admin && (
         <Section title="Export month data">
-          <Text style={s.muted}>Generate the same formatted monthly Excel report as the web Months tab, including expenses, billing settings, flat charges, payment details, totals, and balance. Share it only with authorized recipients.</Text>
-          <Button title={exportingMonth ? 'Preparing export…' : 'Export to Excel (.xlsx)'} onPress={() => void exportMonthExcel()} busy={exportingMonth} />
+          <Text style={s.muted}>
+            Generate the same formatted monthly Excel report as the web Months tab, including expenses, billing settings, flat charges,
+            payment details, totals, and balance. Share it only with authorized recipients.
+          </Text>
+          <Button
+            title={exportingMonth ? 'Preparing export…' : 'Export to Excel (.xlsx)'}
+            onPress={() => void exportMonthExcel()}
+            busy={exportingMonth}
+          />
         </Section>
       )}
       {/* Month Selector Pills */}
@@ -357,14 +394,35 @@ export default function Months({
 
       {/* Expense editing */}
       <Section title="Expense Details">
-        <Text style={s.muted}>Add or edit actual expense descriptions and amounts for {monthLabel(month.month)}. Saving actual expenses does not change the maintenance amount already calculated.</Text>
-        <Text style={[s.rowTitle, { marginTop: 8 }]}>Actual expense total: {inr0(expenseDraft.reduce((sum, row) => sum + (Number(row.amount) || 0), 0))}</Text>
+        <Text style={s.muted}>
+          Add or edit actual expense descriptions and amounts for {monthLabel(month.month)}. Saving actual expenses does not change the
+          maintenance amount already calculated.
+        </Text>
+        <Text style={[s.rowTitle, { marginTop: 8 }]}>
+          Actual expense total: {inr0(expenseDraft.reduce((sum, row) => sum + (Number(row.amount) || 0), 0))}
+        </Text>
         {expenseDraft.map((expense, index) => (
           <View key={`expense-${index}`} style={[s.listRow, { gap: 4 }]}>
             {admin && !locked ? (
               <>
-                <Field label={`Expense ${index + 1} description`} value={expense.description} onChangeText={(value) => setExpenseDraft((rows) => rows.map((row, i) => i === index ? { ...row, description: value } : row))} placeholder="e.g. Lift maintenance" />
-                <Field label="Amount (₹)" value={String(expense.amount ?? 0)} onChangeText={(value) => setExpenseDraft((rows) => rows.map((row, i) => i === index ? { ...row, amount: value === '' ? 0 : Number(value) } : row))} keyboardType="decimal-pad" />
+                <Field
+                  label={`Expense ${index + 1} description`}
+                  value={expense.description}
+                  onChangeText={(value) =>
+                    setExpenseDraft((rows) => rows.map((row, i) => (i === index ? { ...row, description: value } : row)))
+                  }
+                  placeholder="e.g. Lift maintenance"
+                />
+                <Field
+                  label="Amount (₹)"
+                  value={String(expense.amount ?? 0)}
+                  onChangeText={(value) =>
+                    setExpenseDraft((rows) =>
+                      rows.map((row, i) => (i === index ? { ...row, amount: value === '' ? 0 : Number(value) } : row)),
+                    )
+                  }
+                  keyboardType="decimal-pad"
+                />
                 <SmallButton title="Remove expense" danger onPress={() => setExpenseDraft((rows) => rows.filter((_, i) => i !== index))} />
               </>
             ) : (
@@ -376,10 +434,26 @@ export default function Months({
           </View>
         ))}
         {!expenseDraft.length && <EmptyState text="No expense rows added yet." />}
-        {admin && !locked && <>
-          <Button title="+ Add expense" kind="secondary" onPress={() => setExpenseDraft((rows) => [...rows, { description: '', amount: 0 }])} />
-          <Button title={savingExpenses ? 'Saving expenses…' : month.notes?.expensesStage === 'actual' ? 'Save actual expenses' : 'Save expenses & calculate maintenance'} onPress={() => void saveActualExpenses()} busy={savingExpenses} />
-        </>}
+        {admin && !locked && (
+          <>
+            <Button
+              title="+ Add expense"
+              kind="secondary"
+              onPress={() => setExpenseDraft((rows) => [...rows, { description: '', amount: 0 }])}
+            />
+            <Button
+              title={
+                savingExpenses
+                  ? 'Saving expenses…'
+                  : month.notes?.expensesStage === 'actual'
+                    ? 'Save actual expenses'
+                    : 'Save expenses & calculate maintenance'
+              }
+              onPress={() => void saveActualExpenses()}
+              busy={savingExpenses}
+            />
+          </>
+        )}
       </Section>
 
       {/* Maintenance calculation and billing settings */}
@@ -387,21 +461,41 @@ export default function Months({
         {!editingCalculation ? (
           <>
             <Text style={[s.rowTitle, { marginBottom: 4 }]}>{calcText(month)}</Text>
-            <Text style={s.small}>Method: {month.method || 'divide'} ({month.value || data.flats.length}) · Rounding: {month.rounding || 'none'}</Text>
-            <Text style={[s.small, { marginTop: 6 }]}>Corp Fund: {month.corp_applicable ? `Applicable · ${month.corp_method || 'sqft'} · rate ${month.corp_value ?? month.corp_rate ?? 0.5} · rounding ${month.corp_rounding || 'nearest'}` : 'Not applicable this month'}</Text>
-            {admin && !locked && <Button title="Edit maintenance calculation" kind="secondary" onPress={() => setEditingCalculation(true)} />}
-            {superAdmin && !locked && month.notes?.expensesStage === 'actual' && <Button title="Reset maintenance calculation" kind="danger" onPress={resetMaintenanceCalculation} />}
+            <Text style={s.small}>
+              Method: {month.method || 'divide'} ({month.value || data.flats.length}) · Rounding: {month.rounding || 'none'}
+            </Text>
+            <Text style={[s.small, { marginTop: 6 }]}>
+              Corp Fund:{' '}
+              {month.corp_applicable
+                ? `Applicable · ${month.corp_method || 'sqft'} · rate ${month.corp_value ?? month.corp_rate ?? 0.5} · rounding ${month.corp_rounding || 'nearest'}`
+                : 'Not applicable this month'}
+            </Text>
+            {admin && !locked && (
+              <Button title="Edit maintenance calculation" kind="secondary" onPress={() => setEditingCalculation(true)} />
+            )}
+            {superAdmin && !locked && month.notes?.expensesStage === 'actual' && (
+              <Button title="Reset maintenance calculation" kind="danger" onPress={resetMaintenanceCalculation} />
+            )}
           </>
         ) : (
           <>
-            <Text style={s.muted}>Choose the same billing options available on the web app. Saving recalculates this month's maintenance dues.</Text>
+            <Text style={s.muted}>
+              Choose the same billing options available on the web app. Saving recalculates this month's maintenance dues.
+            </Text>
             <Text style={s.label}>Maintenance calculation</Text>
             <View style={s.rowWrap}>
               <Chip label="Expenses ÷ flats" active={calcMethod === 'divide'} onPress={() => setCalcMethod('divide')} />
               <Chip label="Fixed per flat" active={calcMethod === 'common'} onPress={() => setCalcMethod('common')} />
               <Chip label="Per sq ft" active={calcMethod === 'sqft'} onPress={() => setCalcMethod('sqft')} />
             </View>
-            {(calcMethod === 'common' || calcMethod === 'sqft') && <Field label={calcMethod === 'common' ? 'Maintenance amount per flat (₹)' : 'Maintenance rate per sq ft (₹)'} value={calcValue} onChangeText={setCalcValue} keyboardType="decimal-pad" />}
+            {(calcMethod === 'common' || calcMethod === 'sqft') && (
+              <Field
+                label={calcMethod === 'common' ? 'Maintenance amount per flat (₹)' : 'Maintenance rate per sq ft (₹)'}
+                value={calcValue}
+                onChangeText={setCalcValue}
+                keyboardType="decimal-pad"
+              />
+            )}
             <Text style={s.label}>Maintenance rounding</Text>
             <View style={s.rowWrap}>
               <Chip label="2 decimals" active={calcRounding === 'none'} onPress={() => setCalcRounding('none')} />
@@ -413,22 +507,50 @@ export default function Months({
               <Chip label="Applicable" active={corpApplicable} onPress={() => setCorpApplicable(true)} />
               <Chip label="Not applicable" active={!corpApplicable} onPress={() => setCorpApplicable(false)} />
             </View>
-            {corpApplicable && <>
-              <Text style={s.label}>Corp Fund calculation</Text>
-              <View style={s.rowWrap}>
-                <Chip label="Based on sq ft" active={corpMethod === 'sqft'} onPress={() => setCorpMethod('sqft')} />
-                <Chip label="Fixed per flat" active={corpMethod === 'common'} onPress={() => setCorpMethod('common')} />
-              </View>
-              <Field label={corpMethod === 'sqft' ? 'Corp Fund rate per sq ft (₹)' : 'Corp Fund amount per flat (₹)'} value={corpRate} onChangeText={setCorpRate} keyboardType="decimal-pad" />
-              <Text style={s.label}>Corp Fund rounding</Text>
-              <View style={s.rowWrap}>
-                <Chip label="2 decimals" active={corpRounding === 'none'} onPress={() => setCorpRounding('none')} />
-                <Chip label="Nearest ₹1" active={corpRounding === 'nearest'} onPress={() => setCorpRounding('nearest')} />
-                <Chip label="Round up ₹1" active={corpRounding === 'up'} onPress={() => setCorpRounding('up')} />
-              </View>
-            </>}
-            <Button title="Save and recalculate" onPress={() => showAppDialog('Recalculate maintenance?', 'This will update maintenance dues for this month using the selected settings.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Recalculate', onPress: () => void saveMaintenanceCalculation() }])} />
-            <Button title="Cancel" kind="secondary" onPress={() => { setEditingCalculation(false); setCalcMethod(month.method || 'divide'); setCalcValue(String(month.value ?? data.flats.length)); setCalcRounding(month.rounding || 'none'); setCorpApplicable(month.corp_applicable === true); setCorpMethod(month.corp_method || 'sqft'); setCorpRate(String(month.corp_value ?? month.corp_rate ?? 0.5)); setCorpRounding(month.corp_rounding || 'nearest'); }} />
+            {corpApplicable && (
+              <>
+                <Text style={s.label}>Corp Fund calculation</Text>
+                <View style={s.rowWrap}>
+                  <Chip label="Based on sq ft" active={corpMethod === 'sqft'} onPress={() => setCorpMethod('sqft')} />
+                  <Chip label="Fixed per flat" active={corpMethod === 'common'} onPress={() => setCorpMethod('common')} />
+                </View>
+                <Field
+                  label={corpMethod === 'sqft' ? 'Corp Fund rate per sq ft (₹)' : 'Corp Fund amount per flat (₹)'}
+                  value={corpRate}
+                  onChangeText={setCorpRate}
+                  keyboardType="decimal-pad"
+                />
+                <Text style={s.label}>Corp Fund rounding</Text>
+                <View style={s.rowWrap}>
+                  <Chip label="2 decimals" active={corpRounding === 'none'} onPress={() => setCorpRounding('none')} />
+                  <Chip label="Nearest ₹1" active={corpRounding === 'nearest'} onPress={() => setCorpRounding('nearest')} />
+                  <Chip label="Round up ₹1" active={corpRounding === 'up'} onPress={() => setCorpRounding('up')} />
+                </View>
+              </>
+            )}
+            <Button
+              title="Save and recalculate"
+              onPress={() =>
+                showAppDialog('Recalculate maintenance?', 'This will update maintenance dues for this month using the selected settings.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Recalculate', onPress: () => void saveMaintenanceCalculation() },
+                ])
+              }
+            />
+            <Button
+              title="Cancel"
+              kind="secondary"
+              onPress={() => {
+                setEditingCalculation(false);
+                setCalcMethod(month.method || 'divide');
+                setCalcValue(String(month.value ?? data.flats.length));
+                setCalcRounding(month.rounding || 'none');
+                setCorpApplicable(month.corp_applicable === true);
+                setCorpMethod(month.corp_method || 'sqft');
+                setCorpRate(String(month.corp_value ?? month.corp_rate ?? 0.5));
+                setCorpRounding(month.corp_rounding || 'nearest');
+              }}
+            />
           </>
         )}
       </Section>
@@ -526,10 +648,7 @@ export default function Months({
             </TouchableOpacity>
 
             <View style={[s.rowWrap, { marginTop: 8 }]}>
-              <SmallButton
-                title="View Receipt"
-                onPress={() => setReceiptFlat({ flat: f, dues: d, payment: payments.get(f.flat) })}
-              />
+              <SmallButton title="View Receipt" onPress={() => setReceiptFlat({ flat: f, dues: d, payment: payments.get(f.flat) })} />
               {!!f.phone && (
                 <SmallButton
                   title="WhatsApp"
@@ -572,9 +691,7 @@ export default function Months({
             <Text style={s.small}>Corp Fund Due: {inr(receiptFlat.dues.cdue)}</Text>
             <Text style={s.small}>Corp Fund Paid: {inr(receiptFlat.dues.cpaid)}</Text>
             <Text style={[s.rowTitle, { marginTop: 8 }]}>Total Paid: {inr(receiptFlat.dues.totalPaid)}</Text>
-            <Text style={[s.small, { color: receiptFlat.dues.balance > 0 ? BAD : OK }]}>
-              Balance: {inr(receiptFlat.dues.balance)}
-            </Text>
+            <Text style={[s.small, { color: receiptFlat.dues.balance > 0 ? BAD : OK }]}>Balance: {inr(receiptFlat.dues.balance)}</Text>
             {receiptFlat.payment?.mode ? <Text style={s.small}>Mode: {receiptFlat.payment.mode}</Text> : null}
             {receiptFlat.payment?.paid_date ? <Text style={s.small}>Date: {receiptFlat.payment.paid_date}</Text> : null}
           </View>

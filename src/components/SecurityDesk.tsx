@@ -83,7 +83,10 @@ export default function SecurityDesk({
         token,
       );
       setPhotoRequests(approvals.requests || []);
-      const parcels = await call<{ notices: ParcelNotice[] }>({ action: "listParcelNotices" }, token);
+      const parcels = await call<{ notices: ParcelNotice[] }>(
+        { action: "listParcelNotices" },
+        token,
+      );
       setParcelNotices(parcels.notices || []);
     } catch (e) {
       setMessage(errText(e));
@@ -102,7 +105,11 @@ export default function SecurityDesk({
     if (match) setForm((current) => ({ ...current, flat: match.flat }));
   }, [userFlat, flats, form.flat]);
   const markParcelCollected = async (notice: ParcelNotice) => {
-    const confirmed = await openConfirm({ title: "Mark parcel as collected?", message: `Confirm the parcel for flat ${notice.flat} has been collected.`, confirmLabel: "Mark collected" });
+    const confirmed = await openConfirm({
+      title: "Mark parcel as collected?",
+      message: `Confirm the parcel for flat ${notice.flat} has been collected.`,
+      confirmLabel: "Mark collected",
+    });
     if (!confirmed) return;
     setBusy(true);
     setMessage("");
@@ -159,18 +166,34 @@ export default function SecurityDesk({
       setBusy(false);
     }
   };
-  const reviewPhotoRequest = async (request: PhotoRequest, status: "approved" | "rejected") => {
-    if (!(await openConfirm({
-      title: status === "approved" ? "Approve visitor entry?" : "Reject visitor entry?",
-      message: `${status === "approved" ? "Allow" : "Deny"} access for ${request.visitor_name} to flat ${request.flat}?`,
-      confirmLabel: status === "approved" ? "Approve entry" : "Reject entry",
-      danger: status === "rejected",
-    }))) return;
+  const reviewPhotoRequest = async (
+    request: PhotoRequest,
+    status: "approved" | "rejected",
+  ) => {
+    if (
+      !(await openConfirm({
+        title:
+          status === "approved"
+            ? "Approve visitor entry?"
+            : "Reject visitor entry?",
+        message: `${status === "approved" ? "Allow" : "Deny"} access for ${request.visitor_name} to flat ${request.flat}?`,
+        confirmLabel: status === "approved" ? "Approve entry" : "Reject entry",
+        danger: status === "rejected",
+      }))
+    )
+      return;
     setBusy(true);
     setMessage("");
     try {
-      await call({ action: "reviewVisitorPhotoRequest", id: request.id, status }, token);
-      setMessage(status === "approved" ? "Visitor approved. Security can allow entry." : "Visitor rejected. Security should deny entry.");
+      await call(
+        { action: "reviewVisitorPhotoRequest", id: request.id, status },
+        token,
+      );
+      setMessage(
+        status === "approved"
+          ? "Visitor approved. Security can allow entry."
+          : "Visitor rejected. Security should deny entry.",
+      );
       await load();
     } catch (e) {
       setMessage(errText(e));
@@ -337,7 +360,9 @@ export default function SecurityDesk({
           <div className="card">
             <h3>Verify owner-approved visitor</h3>
             <p className="muted">
-              Enter the 6-digit code after the flat owner has approved the visitor photo in My Apartment. Unapproved visitors cannot be accepted here.
+              Enter the 6-digit code after the flat owner has approved the
+              visitor photo in My Apartment. Unapproved visitors cannot be
+              accepted here.
             </p>
             <label>
               6-digit access code
@@ -450,22 +475,62 @@ export default function SecurityDesk({
       {!securityMode && (
         <div className="card">
           <h3>Visitor photo approvals</h3>
-          <p className="muted">Security-submitted visitor photos for your flat. Approve or reject pending visitors below.</p>
-          {!photoRequests.length ? <p className="muted">No visitor photo requests for your flat.</p> : (
+          <p className="muted">
+            Security-submitted visitor photos for your flat. Approve or reject
+            pending visitors below.
+          </p>
+          {!photoRequests.length ? (
+            <p className="muted">No visitor photo requests for your flat.</p>
+          ) : (
             <div className="visitor-photo-requests">
               {photoRequests.map((request) => (
                 <article className="visitor-photo-request" key={request.id}>
                   <div className="row-between">
-                    <strong>{request.visitor_name} · Flat {request.flat}</strong>
-                    <span className={`badge ${request.status === "approved" ? "badge-approved" : request.status === "rejected" ? "badge-rejected" : "badge-open"}`}>{request.status}</span>
+                    <strong>
+                      {request.visitor_name} · Flat {request.flat}
+                    </strong>
+                    <span
+                      className={`badge ${request.status === "approved" ? "badge-approved" : request.status === "rejected" ? "badge-rejected" : "badge-open"}`}
+                    >
+                      {request.status}
+                    </span>
                   </div>
-                  <p className="muted">{request.purpose || "Visitor"} · Submitted {new Date(request.created_at).toLocaleString()}</p>
-                  <img src={request.photo_data} alt={`Visitor photo for ${request.visitor_name}`} loading="lazy" />
-                  {request.review_note && <p className="muted">Note: {request.review_note}</p>}
-                  {request.status === "pending" && <div className="visitor-code-actions">
-                    <button type="button" className="pri" disabled={busy} onClick={() => void reviewPhotoRequest(request, "approved")}>Approve entry</button>
-                    <button type="button" className="danger" disabled={busy} onClick={() => void reviewPhotoRequest(request, "rejected")}>Reject entry</button>
-                  </div>}
+                  <p className="muted">
+                    {request.purpose || "Visitor"} · Submitted{" "}
+                    {new Date(request.created_at).toLocaleString()}
+                  </p>
+                  <img
+                    src={request.photo_data}
+                    alt={`Visitor photo for ${request.visitor_name}`}
+                    loading="lazy"
+                  />
+                  {request.review_note && (
+                    <p className="muted">Note: {request.review_note}</p>
+                  )}
+                  {request.status === "pending" && (
+                    <div className="visitor-code-actions">
+                      <button
+                        type="button"
+                        className="pri"
+                        disabled={busy}
+                        onClick={() =>
+                          void reviewPhotoRequest(request, "approved")
+                        }
+                      >
+                        Approve entry
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        disabled={busy}
+                        onClick={() =>
+                          void reviewPhotoRequest(request, "rejected")
+                        }
+                      >
+                        Reject entry
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -475,19 +540,56 @@ export default function SecurityDesk({
       {!securityMode && (
         <div className="card">
           <h3>Parcel delivery notices</h3>
-          <p className="muted">Security records parcels delivered for your flat. Review the photo and mark the parcel as collected when you receive it.</p>
-          {!parcelNotices.length ? <p className="muted">No parcel notices for your flat.</p> : (
+          <p className="muted">
+            Security records parcels delivered for your flat. Review the photo
+            and mark the parcel as collected when you receive it.
+          </p>
+          {!parcelNotices.length ? (
+            <p className="muted">No parcel notices for your flat.</p>
+          ) : (
             <div className="visitor-photo-requests">
               {parcelNotices.map((notice) => (
                 <article className="visitor-photo-request" key={notice.id}>
                   <div className="row-between">
                     <strong>Parcel · Flat {notice.flat}</strong>
-                    <span className={`badge ${notice.status === "collected" ? "badge-approved" : "badge-open"}`}>{notice.status === "collected" ? "collected" : "awaiting collection"}</span>
+                    <span
+                      className={`badge ${notice.status === "collected" ? "badge-approved" : "badge-open"}`}
+                    >
+                      {notice.status === "collected"
+                        ? "collected"
+                        : "awaiting collection"}
+                    </span>
                   </div>
-                  <p className="muted">{notice.courier || "Courier not specified"}{notice.tracking_number ? ` · ${notice.tracking_number}` : ""} · Recorded {new Date(notice.created_at).toLocaleString()}</p>
+                  <p className="muted">
+                    {notice.courier || "Courier not specified"}
+                    {notice.tracking_number
+                      ? ` · ${notice.tracking_number}`
+                      : ""}{" "}
+                    · Recorded {new Date(notice.created_at).toLocaleString()}
+                  </p>
                   {notice.notes && <p>{notice.notes}</p>}
-                  <img src={notice.photo_data} alt={`Parcel for flat ${notice.flat}`} loading="lazy" />
-                  {notice.status === "pending" ? <button type="button" className="pri" disabled={busy} onClick={() => void markParcelCollected(notice)}>Mark as collected</button> : <p className="muted">Collected {notice.acknowledged_at ? new Date(notice.acknowledged_at).toLocaleString() : ""}</p>}
+                  <img
+                    src={notice.photo_data}
+                    alt={`Parcel for flat ${notice.flat}`}
+                    loading="lazy"
+                  />
+                  {notice.status === "pending" ? (
+                    <button
+                      type="button"
+                      className="pri"
+                      disabled={busy}
+                      onClick={() => void markParcelCollected(notice)}
+                    >
+                      Mark as collected
+                    </button>
+                  ) : (
+                    <p className="muted">
+                      Collected{" "}
+                      {notice.acknowledged_at
+                        ? new Date(notice.acknowledged_at).toLocaleString()
+                        : ""}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>

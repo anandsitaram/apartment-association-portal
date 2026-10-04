@@ -148,7 +148,11 @@ export const actions: Record<string, Action> = {
       try {
         data = unprotectBackup(data);
       } catch (error) {
-        fail(400, (error as Error).message || "Encrypted backup could not be opened. Check the server encryption key.");
+        fail(
+          400,
+          (error as Error).message ||
+            "Encrypted backup could not be opened. Check the server encryption key.",
+        );
       }
       await restore({ query: (text, params) => sql.query(text, params) }, data);
       ctx.audit = { target: "backup-restore", detail: { confirmed: true } };
@@ -247,8 +251,15 @@ export const actions: Record<string, Action> = {
       if (!r) fail(404, "Backup not found");
       // Old database backups may predate encryption; wrap them before export.
       const backup = protectBackup(r.data);
-      if (!(r.data && typeof r.data === "object" && (r.data as any).app === "rv-fallon-encrypted-backup")) {
-        await sql.query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [Math.trunc(+b.id) || 0, JSON.stringify(backup)]);
+      if (!(
+        r.data &&
+        typeof r.data === "object" &&
+        (r.data as any).app === "rv-fallon-encrypted-backup"
+      )) {
+        await sql.query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [
+          Math.trunc(+b.id) || 0,
+          JSON.stringify(backup),
+        ]);
       }
       return { backup };
     },

@@ -70,13 +70,13 @@ export default function ContactUs({
             <h2>CONTACT US</h2>
             <p className="muted">
               If you have any questions, reach out to us at{" "}
-              <a href="mailto:aisdsdsd@gmail.com">aisdsdsd@gmail.com</a>.
-              You can also send a message using the form below when email
+              <a href="mailto:aiintechlabs@gmail.com">aiintechlabs@gmail.com</a>. You
+              can also send a message using the form below when email
               submissions are configured.
             </p>
           </div>
-          <a className="contact-recipient" href="mailto:aisdsdsd@gmail.com">
-            aisdsdsd@gmail.com
+          <a className="contact-recipient" href="mailto:aiintechlabs@gmail.com">
+            aiintechlabs@gmail.com
           </a>
         </div>
         {showWhatsApp &&
