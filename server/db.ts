@@ -80,14 +80,16 @@ async function connect(): Promise<{ query: Query }> {
       },
     };
   }
+
   const { default: pg } = await import("pg");
+
   const pool = new pg.Pool({
     connectionString: cleanUrl(u),
     max: 1,
     ssl: useSsl(u)
       ? {
-          rejectUnauthorized:
-            process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false",
+          ca: process.env.DATABASE_CA?.replace(/\\n/g, "\n"),
+          rejectUnauthorized: true,
         }
       : false,
   });
