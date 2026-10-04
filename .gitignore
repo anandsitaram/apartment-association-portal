@@ -1,0 +1,30 @@
+node_modules
+dist
+.env
+.vercel
+.env.local
+
+# Web build output
+apps/web/dist/
+.idea
+/test-results/
+
+
+# iOS build artifacts (mobile/ios itself IS committed)
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+docs/
+playwright-report/
+
+# Native mobile app (mobile/)
+mobile/node_modules/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/.cxx/
+mobile/ios/build/
+mobile/ios/Pods/
+mobile/*.jsbundle
+mobile/index.android.bundle

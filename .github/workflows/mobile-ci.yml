@@ -1,0 +1,26 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    paths: ["mobile/**", "shared/**", ".github/workflows/mobile-ci.yml"]
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm install --ignore-scripts --legacy-peer-deps
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Bundle JS (proves Metro resolves /shared)
+        run: npx react-native bundle --platform android --dev false --entry-file index.ts --bundle-output /tmp/rv.bundle.js

@@ -1,0 +1,9 @@
+Excel compatibility fix
+
+The public/template.xlsx workbook has been normalized through LibreOffice to remove legacy/unsupported style extension metadata that was being carried into generated exports. This keeps the template content while removing unused slicer/timeline style extension lists that can trigger strict spreadsheet-reader compatibility issues.
+
+The user-provided generated workbooks were also opened and re-saved through LibreOffice as Excel-compatible copies:
+- RV_Fallon_Sept_2026_ExcelCompatible.xlsx
+- RV_Fallon_Sept_2026_Complete_ExcelCompatible.xlsx
+
+Please deploy this project and test the newly generated exports in the target Microsoft Excel version. If Excel still displays a repair/error prompt, capture the exact message because that would point to a different workbook feature.
