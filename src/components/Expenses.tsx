@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Expense, Flat, Month, Settings } from "../../shared/types";
 import type { Save } from "../api.js";
-import { calcText, expFromHeads, inr, sum } from "../../shared/lib.js";
+import { calcText, expFromHeads, inr, rnd, sum } from "../../shared/lib.js";
 import { openConfirm } from "./ui/appDialog.js";
 
 // A month starts in expected-expense mode. Calculating maintenance saves the
@@ -45,6 +45,9 @@ export default function Expenses({
   const [corpApplicable, setCorpApplicable] = useState(
     m.corp_applicable === true,
   );
+  const [mergeMaintenanceCorp, setMergeMaintenanceCorp] = useState(
+    m.notes?.mergeMaintenanceCorp === true,
+  );
   const [corpMethod, setCorpMethod] = useState<"sqft" | "common">(
     m.corp_method || "sqft",
   );
@@ -71,6 +74,7 @@ export default function Expenses({
     );
     setRounding(m.rounding || "none");
     setCorpApplicable(m.corp_applicable === true);
+    setMergeMaintenanceCorp(m.notes?.mergeMaintenanceCorp === true);
     setCorpMethod(m.corp_method || "sqft");
     setCorpRate(String(m.corp_value ?? m.corp_rate ?? 0.5));
     setCorpRounding(m.corp_rounding || "nearest");
@@ -95,6 +99,12 @@ export default function Expenses({
     stage === "actual" && !editingCalculation
       ? (m.calculated_expense_total ?? t)
       : t;
+  const displayRounding =
+    stage === "actual" && !editingCalculation
+      ? m.rounding || rounding
+      : rounding;
+  const perFlatBeforeRounding = billingBasisTotal / displayDivisor;
+  const perFlatAfterRounding = rnd(perFlatBeforeRounding, displayRounding);
   const valueForSave = (recalculate: boolean) =>
     stage === "actual" && !recalculate
       ? (m.value ??
@@ -140,6 +150,13 @@ export default function Expenses({
       stage === "actual" && !editingCalculation
         ? m.corp_rounding || corpRounding
         : corpRounding,
+    notes: {
+      ...(m.notes || {}),
+      mergeMaintenanceCorp:
+        stage === "actual" && !editingCalculation
+          ? m.notes?.mergeMaintenanceCorp === true
+          : mergeMaintenanceCorp,
+    },
   };
   const saveExpenses = async (recalculate: boolean) => {
     setSaving(true);
@@ -163,6 +180,10 @@ export default function Expenses({
           ...(m.notes || {}),
           expenses: note.trim(),
           expensesStage: "actual",
+          mergeMaintenanceCorp:
+            stage === "actual" && !editingCalculation
+              ? m.notes?.mergeMaintenanceCorp === true
+              : mergeMaintenanceCorp,
         },
         recalculate,
       });
@@ -245,6 +266,7 @@ export default function Expenses({
           ...(m.notes || {}),
           expenses: note.trim(),
           expensesStage: "expected",
+          mergeMaintenanceCorp,
         },
         recalculate: false,
       });
@@ -290,6 +312,7 @@ export default function Expenses({
           ...(m.notes || {}),
           expenses: note.trim(),
           expensesStage: "actual",
+          mergeMaintenanceCorp,
         },
         recalculate: true,
       });
@@ -410,7 +433,30 @@ export default function Expenses({
               <option value="none">None (2 decimals)</option>
               <option value="nearest">Nearest ₹1</option>
               <option value="up">Round up to ₹1</option>
+              <option value="up50">Round up to next ₹50</option>
+              <option value="up100">Round up to next ₹100</option>
             </select>
+          </label>
+          <label className="opt">
+            <span>Merge Maintenance and Corp Fund?</span>
+            <select
+              value={mergeMaintenanceCorp ? "yes" : "no"}
+              onChange={(e) =>
+                setMergeMaintenanceCorp(e.target.value === "yes")
+              }
+            >
+              <option value="no">
+                No — show separate Maintenance and Corp Fund tables
+              </option>
+              <option value="yes">
+                Yes — show one combined charge and payment entry under
+                Maintenance
+              </option>
+            </select>
+            <small className="muted">
+              When enabled, rounding applies to the combined current-month
+              charge. Corp Fund is still allocated internally for accounting.
+            </small>
           </label>
           <label className="opt">
             <span>Corp Fund applicable?</span>
@@ -529,13 +575,31 @@ export default function Expenses({
       </div>
       <div className="settings-example">
         <b>Maintenance calculation</b>
-        <p>{calcText(draft)}</p>
+        <p>
+          {mergeMaintenanceCorp && corpApplicable
+            ? `${calcText({ ...draft, rounding: "none" })}; Corp Fund is added before the selected rounding is applied to the combined charge.`
+            : calcText(draft)}
+        </p>
         {method === "divide" ? (
-          <p>
-            {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
-            <b>{inr(billingBasisTotal / displayDivisor)} per flat</b> before
-            rounding.
-          </p>
+          <>
+            <p>
+              {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
+              <b>{inr(perFlatBeforeRounding)} per flat</b> before rounding.
+            </p>
+            {mergeMaintenanceCorp && corpApplicable ? (
+              <p>
+                Maintenance + Corp Fund are combined per flat and rounded using
+                the selected rule. The combined charge is shown in the
+                Maintenance payments table; Corp Fund remains internally
+                accounted separately.
+              </p>
+            ) : (
+              <p>
+                {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
+                <b>{inr(perFlatAfterRounding)} per flat</b> after rounding.
+              </p>
+            )}
+          </>
         ) : (
           <p>Uses the monthly billing method selected above.</p>
         )}

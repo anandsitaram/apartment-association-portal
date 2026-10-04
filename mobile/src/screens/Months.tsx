@@ -6,7 +6,18 @@ import { Badge, Button, Chip, EmptyState, Field, Section, Sheet, SmallButton, St
 import { FlatDues, flatDues, monthTotals } from '../../../shared/dues';
 import { STATUS_LABEL, STATUS_TONE } from '../core/status';
 import { inr, inr0, isDateKey, monthLabel, todayKey } from '../../../shared/format';
-import { billingOf, calcText, corpOf, dueDateText, isDueDatePassed, maintOf, total, vsum } from '../../../shared/lib';
+import {
+  allocateTotal,
+  billingOf,
+  calcText,
+  corpOf,
+  dueDateText,
+  isDueDatePassed,
+  maintOf,
+  splitOf,
+  total,
+  vsum,
+} from '../../../shared/lib';
 import { call, errText } from '../core/api';
 import type { Expense, Flat, Month, Payment } from '../../../shared/types';
 import type { ScreenProps } from './types';
@@ -32,6 +43,7 @@ export default function Months({
   const [calcValue, setCalcValue] = useState(String(month?.value ?? data.flats.length));
   const [calcRounding, setCalcRounding] = useState<NonNullable<Month['rounding']>>(month?.rounding || 'none');
   const [corpApplicable, setCorpApplicable] = useState(month?.corp_applicable === true);
+  const [mergeMaintenanceCorp, setMergeMaintenanceCorp] = useState(month?.notes?.mergeMaintenanceCorp === true);
   const [corpMethod, setCorpMethod] = useState<'sqft' | 'common'>(month?.corp_method || 'sqft');
   const [corpRate, setCorpRate] = useState(String(month?.corp_value ?? month?.corp_rate ?? 0.5));
   const [corpRounding, setCorpRounding] = useState<NonNullable<Month['corp_rounding']>>(month?.corp_rounding || 'nearest');
@@ -56,6 +68,7 @@ export default function Months({
     setCalcValue(String(month?.value ?? data.flats.length));
     setCalcRounding(month?.rounding || 'none');
     setCorpApplicable(month?.corp_applicable === true);
+    setMergeMaintenanceCorp(month?.notes?.mergeMaintenanceCorp === true);
     setCorpMethod(month?.corp_method || 'sqft');
     setCorpRate(String(month?.corp_value ?? month?.corp_rate ?? 0.5));
     setCorpRounding(month?.corp_rounding || 'nearest');
@@ -79,7 +92,7 @@ export default function Months({
         corpValue: corp,
         corpRounding,
         calculatedExpenseTotal: total(month),
-        notes: { ...(month.notes || {}), expensesStage: 'actual' },
+        notes: { ...(month.notes || {}), expensesStage: 'actual', mergeMaintenanceCorp },
         recalculate: true,
       },
       'Maintenance calculation saved',
@@ -116,7 +129,11 @@ export default function Months({
           corpValue: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
           corpRounding: expectedStage ? corpRounding : month.corp_rounding || 'nearest',
           calculatedExpenseTotal: expectedStage ? draftTotal : (month.calculated_expense_total ?? total(month)),
-          notes: { ...(month.notes || {}), expensesStage: 'actual' },
+          notes: {
+            ...(month.notes || {}),
+            expensesStage: 'actual',
+            mergeMaintenanceCorp: expectedStage ? mergeMaintenanceCorp : month.notes?.mergeMaintenanceCorp === true,
+          },
           recalculate: expectedStage,
         },
         expectedStage ? 'Expenses saved and maintenance recalculated' : 'Actual expenses saved',
@@ -148,7 +165,7 @@ export default function Months({
               corpRate: month.corp_value ?? month.corp_rate ?? 0.5,
               corpValue: month.corp_value ?? month.corp_rate ?? 0.5,
               corpRounding: month.corp_rounding || 'nearest',
-              notes: { ...(month.notes || {}), expensesStage: 'expected' },
+              notes: { ...(month.notes || {}), expensesStage: 'expected', mergeMaintenanceCorp },
               recalculate: false,
             },
             'Maintenance calculation reset',
@@ -461,8 +478,17 @@ export default function Months({
         {!editingCalculation ? (
           <>
             <Text style={[s.rowTitle, { marginBottom: 4 }]}>{calcText(month)}</Text>
+            {month.notes?.mergeMaintenanceCorp && month.corp_applicable !== false && (
+              <Text style={s.small}>Selected rounding applies to the combined Maintenance + Corp Fund charge per flat.</Text>
+            )}
             <Text style={s.small}>
               Method: {month.method || 'divide'} ({month.value || data.flats.length}) · Rounding: {month.rounding || 'none'}
+            </Text>
+            <Text style={s.small}>
+              Billing display:{' '}
+              {month.notes?.mergeMaintenanceCorp
+                ? 'Combined amount shown and recorded under Maintenance'
+                : 'Maintenance and Corp Fund shown separately'}
             </Text>
             <Text style={[s.small, { marginTop: 6 }]}>
               Corp Fund:{' '}
@@ -501,7 +527,17 @@ export default function Months({
               <Chip label="2 decimals" active={calcRounding === 'none'} onPress={() => setCalcRounding('none')} />
               <Chip label="Nearest ₹1" active={calcRounding === 'nearest'} onPress={() => setCalcRounding('nearest')} />
               <Chip label="Round up ₹1" active={calcRounding === 'up'} onPress={() => setCalcRounding('up')} />
+              <Chip label="Round up ₹50" active={calcRounding === 'up50'} onPress={() => setCalcRounding('up50')} />
+              <Chip label="Round up ₹100" active={calcRounding === 'up100'} onPress={() => setCalcRounding('up100')} />
             </View>
+            <Text style={s.label}>Merge Maintenance and Corp Fund?</Text>
+            <View style={s.rowWrap}>
+              <Chip label="No — separate" active={!mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(false)} />
+              <Chip label="Yes — combine" active={mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(true)} />
+            </View>
+            <Text style={s.small}>
+              When combined, the selected rounding applies to the total charge. Corp Fund remains internally allocated for accounting.
+            </Text>
             <Text style={s.label}>Corp Fund</Text>
             <View style={s.rowWrap}>
               <Chip label="Applicable" active={corpApplicable} onPress={() => setCorpApplicable(true)} />
@@ -546,6 +582,7 @@ export default function Months({
                 setCalcValue(String(month.value ?? data.flats.length));
                 setCalcRounding(month.rounding || 'none');
                 setCorpApplicable(month.corp_applicable === true);
+                setMergeMaintenanceCorp(month.notes?.mergeMaintenanceCorp === true);
                 setCorpMethod(month.corp_method || 'sqft');
                 setCorpRate(String(month.corp_value ?? month.corp_rate ?? 0.5));
                 setCorpRounding(month.corp_rounding || 'nearest');
@@ -630,13 +667,21 @@ export default function Months({
               </View>
 
               <View style={[s.rowBetween, { marginTop: 4, flexWrap: 'wrap' }]}>
-                <Text style={s.small}>
-                  Maint Due {inr0(d.due)} (Paid {inr0(d.paid)})
-                </Text>
-                {month.corp_applicable !== false && (
+                {month.notes?.mergeMaintenanceCorp ? (
                   <Text style={s.small}>
-                    Corp Due {inr0(d.cdue)} (Paid {inr0(d.cpaid)})
+                    Maintenance + Corp Fund Due {inr0(d.totalDue)} (Paid {inr0(d.totalPaid)})
                   </Text>
+                ) : (
+                  <>
+                    <Text style={s.small}>
+                      Maint Due {inr0(d.due)} (Paid {inr0(d.paid)})
+                    </Text>
+                    {month.corp_applicable !== false && !month.notes?.mergeMaintenanceCorp && (
+                      <Text style={s.small}>
+                        Corp Due {inr0(d.cdue)} (Paid {inr0(d.cpaid)})
+                      </Text>
+                    )}
+                  </>
                 )}
               </View>
 
@@ -672,6 +717,8 @@ export default function Months({
           monthKey={month.month}
           payment={payments.get(editing.flat)}
           dues={flatDues(month, editing, payments.get(editing.flat), admin)}
+          merged={month.notes?.mergeMaintenanceCorp === true}
+          split={splitOf(data.settings)}
           save={save}
           onClose={() => setEditing(null)}
         />
@@ -706,6 +753,8 @@ function PaymentSheet({
   monthKey,
   payment,
   dues,
+  merged = false,
+  split = 'maint_first',
   save,
   onClose,
 }: {
@@ -713,19 +762,28 @@ function PaymentSheet({
   monthKey: string;
   payment?: Payment;
   dues: FlatDues;
+  merged?: boolean;
+  split?: import('../../../shared/types').SplitMode;
   save: ScreenProps['save'];
   onClose: () => void;
 }) {
   const [maint, setMaint] = useState(String(payment?.maint ?? 0));
   const [corp, setCorp] = useState(String(payment?.corp ?? 0));
+  const [combinedPaid, setCombinedPaid] = useState(String((Number(payment?.maint) || 0) + (Number(payment?.corp) || 0)));
   const [mode, setMode] = useState(payment?.mode ?? '');
   const [date, setDate] = useState(payment?.paid_date ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const submit = async () => {
-    const m = Number(maint || 0),
+    let m = Number(maint || 0),
       c = Number(corp || 0);
+    if (merged) {
+      const totalPaid = Number(combinedPaid || 0);
+      if (!Number.isFinite(totalPaid) || totalPaid < 0) return setError('Combined payment must be a number (0 or more)');
+      m = totalPaid;
+      c = 0;
+    }
     if (!Number.isFinite(m) || !Number.isFinite(c) || m < 0 || c < 0) return setError('Amounts must be numbers (0 or more)');
     if (date && !isDateKey(date)) return setError('Paid date must look like 2026-09-30');
     setBusy(true);
@@ -741,10 +799,18 @@ function PaymentSheet({
   return (
     <Sheet visible onClose={onClose} title={`Flat ${flat.flat} · ${monthLabel(monthKey)}`}>
       <Text style={s.muted}>
-        Maintenance due {inr(dues.due)} · Corp Fund due {inr(dues.cdue)}
+        {merged
+          ? `Combined Maintenance + Corp Fund due ${inr(dues.totalDue)} · recorded under Maintenance`
+          : `Maintenance due ${inr(dues.due)} · Corp Fund due ${inr(dues.cdue)}`}
       </Text>
-      <Field label="Maintenance paid (₹)" value={maint} onChangeText={setMaint} keyboardType="decimal-pad" />
-      <Field label="Corp Fund paid (₹)" value={corp} onChangeText={setCorp} keyboardType="decimal-pad" />
+      {merged ? (
+        <Field label="Combined amount paid (₹)" value={combinedPaid} onChangeText={setCombinedPaid} keyboardType="decimal-pad" />
+      ) : (
+        <>
+          <Field label="Maintenance paid (₹)" value={maint} onChangeText={setMaint} keyboardType="decimal-pad" />
+          <Field label="Corp Fund paid (₹)" value={corp} onChangeText={setCorp} keyboardType="decimal-pad" />
+        </>
+      )}
       <Text style={s.label}>Mode</Text>
       <View style={s.rowWrap}>
         <Chip label="None" active={mode === ''} onPress={() => setMode('')} />
@@ -764,8 +830,11 @@ function PaymentSheet({
         <Chip
           label="Mark fully paid"
           onPress={() => {
-            setMaint(String(dues.due));
-            setCorp(String(dues.cdue));
+            if (merged) setCombinedPaid(String(dues.totalDue));
+            else {
+              setMaint(String(dues.due));
+              setCorp(String(dues.cdue));
+            }
             if (!date) setDate(todayKey());
           }}
         />

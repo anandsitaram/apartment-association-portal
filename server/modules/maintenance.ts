@@ -250,6 +250,15 @@ export const actions: Record<string, Action> = {
           m.notes?.expensesStage === "actual" && b.recalculate !== true,
         ],
       );
+      // Merged mode stores all collected money in payments.maint; the separate
+      // payments.corp field must remain zero. Fold any existing split payment into
+      // the combined Maintenance entry when the month is saved in merged mode.
+      if (m.notes?.mergeMaintenanceCorp === true) {
+        await sql.query(
+          "UPDATE payments SET maint=COALESCE(maint,0)+COALESCE(corp,0), corp=0 WHERE month=$1 AND COALESCE(corp,0)<>0",
+          [m.month],
+        );
+      }
       await sql.query("DELETE FROM month_archive WHERE month=$1", [m.month]);
       ctx.audit = {
         target: m.month,
@@ -284,10 +293,15 @@ export const actions: Record<string, Action> = {
       const p = paymentBody(b);
       await assertMonthEditable(p.month);
       const [monthExists, flatExists] = await Promise.all([
-        sql.query("SELECT 1 FROM months WHERE month=$1", [p.month]),
+        sql.query("SELECT notes FROM months WHERE month=$1", [p.month]),
         sql.query("SELECT 1 FROM flats WHERE flat=$1", [p.flat]),
       ]);
       if (!monthExists.length) fail(404, "Month does not exist");
+      const mergedMonth = monthExists[0]?.notes?.mergeMaintenanceCorp === true;
+      const savedMaint = mergedMonth
+        ? (Number(p.maint) || 0) + (Number(p.corp) || 0)
+        : p.maint;
+      const savedCorp = mergedMonth ? 0 : p.corp;
       if (!flatExists.length) fail(404, `Flat ${p.flat} does not exist`);
       const [old] = await sql.query(
         "SELECT maint, corp, mode, paid_date, extra FROM payments WHERE month=$1 AND flat=$2",
@@ -299,8 +313,8 @@ export const actions: Record<string, Action> = {
         [
           p.month,
           p.flat,
-          p.maint,
-          p.corp,
+          savedMaint,
+          savedCorp,
           p.mode,
           p.date,
           JSON.stringify(p.extra),
@@ -314,8 +328,8 @@ export const actions: Record<string, Action> = {
         extra: {},
       };
       const after: Record<string, unknown> = {
-        maint: p.maint,
-        corp: p.corp,
+        maint: savedMaint,
+        corp: savedCorp,
         mode: p.mode,
         paid_date: p.date,
         extra: p.extra,
@@ -334,10 +348,11 @@ export const actions: Record<string, Action> = {
       const { month, entries } = paymentsBody(b);
       await assertMonthEditable(month);
       const monthExists = await sql.query(
-        "SELECT 1 FROM months WHERE month=$1",
+        "SELECT notes FROM months WHERE month=$1",
         [month],
       );
       if (!monthExists.length) fail(404, "Month does not exist");
+      const mergedMonth = monthExists[0]?.notes?.mergeMaintenanceCorp === true;
       const flatRows = await sql.query("SELECT flat FROM flats");
       const validFlats = new Set(flatRows.map((r) => r.flat));
       const unknown = entries.find(
@@ -346,8 +361,10 @@ export const actions: Record<string, Action> = {
       if (unknown) fail(404, `Flat ${unknown.flat} does not exist`);
       const rows = entries.map((e: Row) => ({
         flat: e.flat,
-        maint: e.maint,
-        corp: e.corp,
+        maint: mergedMonth
+          ? (Number(e.maint) || 0) + (Number(e.corp) || 0)
+          : e.maint,
+        corp: mergedMonth ? 0 : e.corp,
         mode: e.mode,
         paid_date: e.date,
         extra: e.extra,

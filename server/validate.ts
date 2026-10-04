@@ -53,7 +53,7 @@ export function monthBody(b: Body) {
   if (!["divide", "common", "sqft"].includes(method))
     fail(400, "Unknown maintenance method");
   const rounding: Rounding = b.rounding ?? "none";
-  if (!["none", "nearest", "up"].includes(rounding))
+  if (!["none", "nearest", "up", "up50", "up100"].includes(rounding))
     fail(400, "Unknown round-off option");
   if (b.value != null && !num(b.value, 0, 1e9))
     fail(400, "Calculation value must be a number (0 or more)");
@@ -92,6 +92,7 @@ export function monthBody(b: Body) {
             (b.notes as Body).expensesStage === "expected"
               ? "expected"
               : "actual",
+          mergeMaintenanceCorp: (b.notes as Body).mergeMaintenanceCorp === true,
         }
       : null;
   return {
@@ -239,7 +240,7 @@ export function billingOf(x: unknown): Billing | null {
   if (!["divide", "common", "sqft"].includes(method))
     fail(400, "Unknown maintenance method");
   const rounding: Rounding = b.rounding ?? "none";
-  if (!["none", "nearest", "up"].includes(rounding))
+  if (!["none", "nearest", "up", "up50", "up100"].includes(rounding))
     fail(400, "Unknown round-off option");
   if (b.value != null && !num(b.value, 0, 1e9))
     fail(400, "Calculation value must be a number (0 or more)");

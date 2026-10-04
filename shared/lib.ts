@@ -49,16 +49,21 @@ export const isCorpExcluded = (
   return list ? list.includes(f?.flat ?? "") : !!f?.corp_excluded;
 };
 // Corp Fund supports either a per-sq-ft rate or a fixed amount per flat.
+// Keep the current month's charge separate from carry-forward amounts so a merged
+// rounding adjustment never changes the internally accounted Corp Fund charge.
+export const corpChargeOf = (f: FlatCalc, m: MonthCalc | null | undefined) =>
+  m?.corp_applicable === false || isCorpExcluded(m, f)
+    ? 0
+    : rnd(
+        corpMethodOf(m) === "common" ? corpValueOf(m) : rate(m) * f.bua,
+        m?.corp_rounding || "nearest",
+      );
 export const corpOf = (f: FlatCalc, m: MonthCalc | null | undefined) => {
+  // In merged mode Corp Fund is included in the combined Maintenance charge and
+  // must not appear as a separate due, payment, export, or UI amount.
+  if (m?.notes?.mergeMaintenanceCorp === true) return 0;
   const carry = m?.notes?.carryForward?.[f.flat ?? ""];
-  const current =
-    m?.corp_applicable === false || isCorpExcluded(m, f)
-      ? 0
-      : rnd(
-          corpMethodOf(m) === "common" ? corpValueOf(m) : rate(m) * f.bua,
-          m?.corp_rounding || "nearest",
-        );
-  return current + (Number(carry?.corp) || 0);
+  return corpChargeOf(f, m) + (Number(carry?.corp) || 0);
 };
 export const total = (m?: { expenses?: Expense[] | null } | null) =>
   (m?.expenses || []).reduce((s, e) => s + (+e.amount || 0), 0);
@@ -73,11 +78,15 @@ export const billingExpenseTotal = (
     : Number(m.calculated_expense_total) || 0;
 export const val = (m: MonthCalc) => +(m.value ?? m.divisor ?? 25);
 export const rnd = (x: number, r?: Rounding | string) =>
-  r === "up"
-    ? Math.ceil(x - 1e-9)
-    : r === "nearest"
-      ? Math.round(x)
-      : Math.round(x * 100) / 100;
+  r === "up50"
+    ? Math.ceil((x - 1e-9) / 50) * 50
+    : r === "up100"
+      ? Math.ceil((x - 1e-9) / 100) * 100
+      : r === "up"
+        ? Math.ceil(x - 1e-9)
+        : r === "nearest"
+          ? Math.round(x)
+          : Math.round(x * 100) / 100;
 // Maintenance selection is month-specific. The legacy flat-level `excluded` field is
 // used only for old months that do not yet have a month selection list.
 export const isExpenseExcluded = (
@@ -96,26 +105,41 @@ export const isMaintExcluded = (
   const list = Array.isArray(m?.excluded_flats) ? m.excluded_flats : null;
   return list ? list.includes(f?.flat ?? "") : !!f?.excluded;
 };
-// maintenance per flat: divide the last recalculated expense total by N | common amount | rate x sq ft, then rounding
+// Maintenance per flat. In merged mode the selected maintenance rounding applies
+// to the combined current-month Maintenance + Corp Fund charge. The adjustment is
+// placed in the maintenance bucket; the Corp Fund amount itself stays unchanged.
 export const maintOf = (m: MonthCalc, f: FlatCalc) => {
   const carry = m.notes?.carryForward?.[f.flat ?? ""];
-  const current =
-    isMaintExcluded(m, f) || isExpenseExcluded(m, f)
-      ? 0
-      : rnd(
-          m.method === "common"
-            ? val(m)
-            : m.method === "sqft"
-              ? val(m) * f.bua
-              : billingExpenseTotal(m) / (val(m) || 25),
-          m.rounding,
-        );
-  return current + (Number(carry?.maintenance) || 0);
+  const excluded = isMaintExcluded(m, f) || isExpenseExcluded(m, f);
+  const raw =
+    m.method === "common"
+      ? val(m)
+      : m.method === "sqft"
+        ? val(m) * f.bua
+        : billingExpenseTotal(m) / (val(m) || 25);
+  let current = 0;
+  if (m.notes?.mergeMaintenanceCorp === true) {
+    // The entire rounded amount is stored and displayed as Maintenance.
+    // If maintenance itself is excluded, retain only the applicable Corp Fund.
+    const maintenanceCurrent = excluded ? 0 : raw;
+    current = rnd(maintenanceCurrent + corpChargeOf(f, m), m.rounding);
+  } else if (!excluded) {
+    current = rnd(raw, m.rounding);
+  }
+  const carryMaintenance = Number(carry?.maintenance) || 0;
+  const carryCorp = Number(carry?.corp) || 0;
+  return (
+    current +
+    carryMaintenance +
+    (m.notes?.mergeMaintenanceCorp === true ? carryCorp : 0)
+  );
 };
 // Plain-text description of the month's maintenance calculation (what non-admins see)
 export const RD: Record<string, string> = {
   nearest: "rounded to the nearest ₹1",
   up: "rounded up to the next ₹1",
+  up50: "rounded up to the next ₹50",
+  up100: "rounded up to the next ₹100",
 };
 export const calcText = (m: MonthCalc) => {
   const v = val(m);
@@ -292,18 +316,36 @@ export const maintFormula = (
   expenseSelectionColumn: string | null = null,
 ) => {
   const v = val(m);
-  const base =
+  const maintenanceBase =
     m.method === "common"
       ? `${v}`
       : m.method === "sqft"
         ? `${v}*E${r}`
         : `$C$14/${v || 25}`;
+  const corpBase =
+    corpMethodOf(m) === "common" ? `${corpValueOf(m)}` : `${rate(m)}*E${r}`;
+  const corpPart =
+    m.corp_applicable === false
+      ? "0"
+      : m.corp_rounding === "up"
+        ? `ROUNDUP(${corpBase},0)`
+        : m.corp_rounding === "none"
+          ? `ROUND(${corpBase},2)`
+          : `ROUND(${corpBase},0)`;
+  const base =
+    m.notes?.mergeMaintenanceCorp === true
+      ? `(${maintenanceBase}+${corpPart})`
+      : maintenanceBase;
   const formula =
-    m.rounding === "up"
-      ? `ROUNDUP(${base},0)`
-      : m.rounding === "nearest"
-        ? `ROUND(${base},0)`
-        : `ROUND(${base},2)`;
+    m.rounding === "up50"
+      ? `ROUNDUP((${base})/50,0)*50`
+      : m.rounding === "up100"
+        ? `ROUNDUP((${base})/100,0)*100`
+        : m.rounding === "up"
+          ? `ROUNDUP(${base},0)`
+          : m.rounding === "nearest"
+            ? `ROUND(${base},0)`
+            : `ROUND(${base},2)`;
   let out = formula;
   if (selectionColumn) out = `IF(${selectionColumn}${r}="Excluded",0,${out})`;
   if (expenseSelectionColumn)
@@ -318,9 +360,11 @@ export const corpFormula = (
   cr: Num,
   selectionColumn: string | null = null,
 ) => {
+  // Corp Fund is folded into the Maintenance charge in merged mode.
+  if (m?.notes?.mergeMaintenanceCorp === true || m?.corp_applicable === false)
+    return "0";
   // Match corpOf exactly: disabled Corp Fund is always zero; fixed-per-flat
   // uses the saved amount rather than the square-foot rate.
-  if (m?.corp_applicable === false) return "0";
   const base =
     corpMethodOf(m) === "common" ? `${corpValueOf(m)}` : `${cr}*E${r}`;
   const formula =
@@ -445,7 +489,13 @@ export const newMonthBody = (
     corp_rounding: calc.corpRounding,
     corp_method: calc.corpMethod,
     corp_value: calc.corpValue,
-    notes: { expensesStage: "expected" },
+    notes: {
+      expensesStage: "expected",
+      mergeMaintenanceCorp:
+        source && o.calc === "source"
+          ? source.notes?.mergeMaintenanceCorp === true
+          : false,
+    },
     excludedFlats: fromSource
       ? source!.excluded_flats || []
       : flats.filter((f) => f.excluded).map((f) => f.flat),

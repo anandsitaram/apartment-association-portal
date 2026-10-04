@@ -39,7 +39,6 @@ import {
 import type { ActionBody, Data } from '../../../shared/types';
 import { APP_BRAND_NAME } from '../../../shared/branding';
 import { call, errText, isAuthError, setApiBase } from '../core/api';
-import { DEFAULT_API_BASE_URL } from '../core/config';
 import { isAdminRole, isSuperRole } from '../../../shared/roles';
 import { MobilePage, availablePages, splitTabs } from '../core/pages';
 import { Button, ErrorState, Loading } from '../components';
@@ -53,12 +52,9 @@ import {
   readMonth,
   readServer,
   readSession,
-  readApiServerVersion,
   saveAppLock,
   writeMonth,
   writeSession,
-  writeApiServerVersion,
-  writeServer,
 } from '../services';
 import Login from '../screens/Login';
 import Dashboard from '../screens/Dashboard';
@@ -168,29 +164,12 @@ export default function AppInner() {
     let active = true;
     (async () => {
       try {
-        const [a, server, lock, m, serverVersion] = await Promise.all([
-          readSession(),
-          readServer(),
-          loadAppLock(),
-          readMonth(),
-          readApiServerVersion(),
-        ]);
+        const [a, server, lock, m] = await Promise.all([readSession(), readServer(), loadAppLock(), readMonth()]);
         if (!active) return;
-
-        // This mobile app belongs to the Apartment Association Portal, not the
-        // RV Fallon deployment. On upgrade, clear any saved RV Fallon server
-        // override and its session token so RV Fallon data cannot be loaded.
-        const needsServerMigration = serverVersion !== DEFAULT_API_BASE_URL;
-        if (needsServerMigration) {
-          await Promise.all([clearSession(), writeServer(''), writeApiServerVersion(DEFAULT_API_BASE_URL)]);
-          setApiBase(DEFAULT_API_BASE_URL);
-        } else {
-          setApiBase(server || DEFAULT_API_BASE_URL);
-        }
-
+        if (server) setApiBase(server);
         setAppLockState(lock);
         setMonth(m);
-        if (a && !needsServerMigration) {
+        if (a) {
           setAuth(a);
           setLocked(lock.mode !== 'off');
         }

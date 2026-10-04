@@ -1348,7 +1348,7 @@ export default function App() {
             </span>
             <span className="footer-contact">
               If you have any questions, reach out to us at{" "}
-              <a href="mailto:aiintechlabs@gmail.com">aiintechlabs@gmail.com</a>
+              <a href="mailto:aisdsdsd@gmail.com">aisdsdsd@gmail.com</a>
             </span>
             <button
               type="button"

@@ -32,10 +32,12 @@ export interface Bulk {
 
 const cents = (x: unknown) => Math.round((Number(x) || 0) * 100) / 100;
 // total shown in the "Actual Total Paid" box: maintenance paid + Corp Fund paid (blank while both are blank)
-const totalText = (o: Draft) =>
-  o.maint === "" && o.corp === ""
+const totalText = (o: Draft, merged = false) =>
+  o.maint === "" && (merged || o.corp === "")
     ? ""
-    : String(cents((Number(o.maint) || 0) + (Number(o.corp) || 0)));
+    : String(
+        cents((Number(o.maint) || 0) + (merged ? 0 : Number(o.corp) || 0)),
+      );
 
 export default function Row({
   f,
@@ -50,6 +52,7 @@ export default function Row({
   custom,
   onDraftChange,
   paymentPart = "maintenance",
+  merged = false,
   bulkApply,
   excluded = false,
   split = "maint_first",
@@ -74,6 +77,7 @@ export default function Row({
     paymentPart: "maintenance" | "corp",
   ) => void;
   paymentPart?: "maintenance" | "corp";
+  merged?: boolean;
   bulkApply?: Bulk;
   excluded?: boolean;
   split?: SplitMode;
@@ -83,7 +87,7 @@ export default function Row({
 }) {
   const init = (): Draft => ({
     maint: p.maint ?? "",
-    corp: p.corp ?? "",
+    corp: merged ? "0" : (p.corp ?? ""),
     mode: p.mode || "",
     date: p.paid_date || "",
     extra: p.extra || {},
@@ -95,7 +99,7 @@ export default function Row({
   useEffect(() => {
     setV(init());
     setTDraft(null);
-  }, [p.maint, p.corp, p.mode, p.paid_date, JSON.stringify(p.extra)]);
+  }, [p.maint, p.corp, p.mode, p.paid_date, JSON.stringify(p.extra), merged]);
   const set =
     (k: "maint" | "corp" | "mode" | "date") =>
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -109,11 +113,15 @@ export default function Row({
     setTDraft(raw);
     if (raw === "") return setV({ ...v, maint: "", corp: "" });
     if (!(+raw >= 0)) return;
-    const a = allocateTotal(raw, mp, cd, split);
-    setV({ ...v, maint: String(a.maint), corp: String(a.corp) });
+    if (merged) {
+      setV({ ...v, maint: String(+raw), corp: "0" });
+    } else {
+      const a = allocateTotal(raw, mp, cd, split);
+      setV({ ...v, maint: String(a.maint), corp: String(a.corp) });
+    }
   };
-  const due = mp + cd,
-    paid = (p.maint || 0) + (p.corp || 0),
+  const due = merged ? mp : mp + cd,
+    paid = merged ? p.maint || 0 : (p.maint || 0) + (p.corp || 0),
     mdiff = (p.maint || 0) - mp,
     cdiff = (p.corp || 0) - cd,
     diff = paid - due;
@@ -136,16 +144,23 @@ export default function Row({
         bulkApply.total != null &&
         (bulkApply.scope === "all" || (empty(cur.maint) && empty(cur.corp)))
       ) {
-        const a = allocateTotal(bulkApply.total, mp, cd, split);
-        next.maint = String(a.maint);
-        next.corp = String(a.corp);
+        if (merged) {
+          next.maint = String(+bulkApply.total || 0);
+          next.corp = "0";
+        } else {
+          const a = allocateTotal(bulkApply.total, mp, cd, split);
+          next.maint = String(a.maint);
+          next.corp = String(a.corp);
+        }
       }
       if (
+        !merged &&
         bulkApply.maint !== "" &&
         (bulkApply.scope === "all" || empty(cur.maint))
       )
         next.maint = bulkApply.maint;
       if (
+        !merged &&
         bulkApply.corp !== "" &&
         (bulkApply.scope === "all" || empty(cur.corp))
       )
@@ -180,15 +195,19 @@ export default function Row({
       min="0"
       inputMode="decimal"
       className="r"
-      value={tDraft ?? totalText(v)}
+      value={tDraft ?? totalText(v, merged)}
       onChange={setTotal}
       onBlur={() => setTDraft(null)}
-      title="Type the total received: it is split into Maint. and Corp Fund paid"
+      title={
+        merged
+          ? "Type the combined amount received; it is saved under Maintenance"
+          : "Type the total received: it is split into Maint. and Corp Fund paid"
+      }
     />
-  ) : totalText(v) === "" ? (
+  ) : totalText(v, merged) === "" ? (
     ""
   ) : (
-    n2(totalText(v))
+    n2(totalText(v, merged))
   );
   const cell: Record<string, ReactNode> = {
     sl: f.sl,
@@ -197,9 +216,9 @@ export default function Row({
     type: f.type,
     bua: n2(f.bua),
     uds: n2(f.uds),
-    maint: n2(mp),
-    corp: n2(cd),
-    texp: <b>{n2(mp + cd)}</b>,
+    maint: n2(merged ? mp + cd : mp),
+    corp: n2(merged ? 0 : cd),
+    texp: <b>{n2(due)}</b>,
     mpaid: num("maint"),
     cpaid: num("corp"),
     tpaid: totalPaid,
@@ -278,8 +297,11 @@ export default function Row({
                   paymentPart === "maintenance"
                     ? +v.maint || 0
                     : Number(p.maint) || 0,
-                corp:
-                  paymentPart === "corp" ? +v.corp || 0 : Number(p.corp) || 0,
+                corp: merged
+                  ? 0
+                  : paymentPart === "corp"
+                    ? +v.corp || 0
+                    : Number(p.corp) || 0,
                 mode: paymentPart === "maintenance" ? v.mode : p.mode || "",
                 date:
                   paymentPart === "maintenance" ? v.date : p.paid_date || "",

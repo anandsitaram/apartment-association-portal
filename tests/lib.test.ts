@@ -133,6 +133,24 @@ describe("maintenance", () => {
     );
     expect(maintOf(month({ method: "sqft", value: 2 }), flats[1])).toBe(2405.6);
   });
+  it("rounds the combined Maintenance + Corp Fund charge while preserving Corp Fund accounting", () => {
+    const up50 = month({
+      method: "common",
+      value: 2510.57,
+      rounding: "up50",
+      corp_applicable: true,
+      corp_method: "common",
+      corp_value: 320,
+      corp_rounding: "none",
+      notes: { mergeMaintenanceCorp: true },
+    });
+    expect(maintOf(up50, flats[0])).toBe(2850);
+    expect(corpOf(flats[0], up50)).toBe(0);
+
+    const up100 = { ...up50, rounding: "up100" as const };
+    expect(maintOf(up100, flats[0])).toBe(2900);
+    expect(corpOf(flats[0], up100)).toBe(0);
+  });
   it("adds carried-forward maintenance even when the current month excludes the flat", () => {
     const m = month({
       excluded_flats: ["A"],

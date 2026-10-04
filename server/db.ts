@@ -4,7 +4,7 @@ import type { Query, Row } from "./types";
 import { decryptData, encryptData } from "./crypto.js";
 import { protectBackup } from "./backup.js";
 
-export const SCHEMA_VERSION = 28;
+export const SCHEMA_VERSION = 29;
 export const APP_TABLES = [
   "months",
   "month_archive",
@@ -201,6 +201,16 @@ export async function ensureSchema(
   );
   await q(
     `ALTER TABLE payments ADD COLUMN IF NOT EXISTS extra jsonb DEFAULT '{}'`,
+  );
+  // One-time migration for months already using combined Maintenance + Corp Fund:
+  // fold legacy Corp Fund collections into the single Maintenance payment bucket.
+  await q(
+    `UPDATE payments AS p
+     SET maint=COALESCE(p.maint,0)+COALESCE(p.corp,0), corp=0
+     FROM months AS m
+     WHERE p.month=m.month
+       AND m.notes->>'mergeMaintenanceCorp'='true'
+       AND COALESCE(p.corp,0)<>0`,
   );
   await q(
     `CREATE TABLE IF NOT EXISTS settings(key text PRIMARY KEY, value jsonb)`,

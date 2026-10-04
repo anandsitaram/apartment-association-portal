@@ -108,6 +108,7 @@ export default function MonthTab({
           ? {
               ...previous,
               maint: v.maint,
+              ...(m.notes?.mergeMaintenanceCorp ? { corp: v.corp } : {}),
               mode: v.mode,
               date: v.date,
               extra: v.extra,
@@ -118,6 +119,8 @@ export default function MonthTab({
         corp: false,
       };
       parts[paymentPart] = dirty;
+      if (paymentPart === "maintenance" && m.notes?.mergeMaintenanceCorp)
+        parts.corp = dirty;
       dirtyPartsRef.current[flat] = parts;
       const anyDirty = parts.maintenance || parts.corp;
       setDirtyFlats((prev) => {
@@ -127,7 +130,7 @@ export default function MonthTab({
         return next;
       });
     },
-    [],
+    [m.notes?.mergeMaintenanceCorp],
   );
   useEffect(() => {
     if (!dirtyFlats.size) return;
@@ -275,19 +278,24 @@ export default function MonthTab({
   const identityCols = ["name", "flat", "bua"].filter(
     (k) => k === "flat" || (k === "name" ? showName : !hidden.includes(k)),
   );
-  // Keep Maintenance and Corp Fund in separate tables so each payment stream
-  // can be reviewed and entered independently.
+  // In merged mode the combined charge and payment are stored only in the
+  // Maintenance bucket. Corp Fund remains zero in the payment record and UI.
+  const mergeMaintenanceCorp = m.notes?.mergeMaintenanceCorp === true;
   const maintenanceCols = [
     ...identityCols,
     "maint",
-    "mpaid",
+    mergeMaintenanceCorp ? "tpaid" : "mpaid",
     ...custom.map((c) => c.id).filter((k) => !hidden.includes(k)),
   ];
   const corpCols = [...identityCols, "corp", "cpaid"];
   const colLabel = (k: string) => {
     if (settings.labels?.[k]) return settings.labels[k];
-    if (k === "maint") return "Maintenance Charge";
+    if (k === "maint")
+      return mergeMaintenanceCorp
+        ? "Maintenance + Corp Fund Charge"
+        : "Maintenance Charge";
     if (k === "mpaid") return "Maintenance Paid";
+    if (k === "tpaid" && mergeMaintenanceCorp) return "Combined Amount Paid";
     if (k === "corp") return "Corp Fund Charge";
     if (k === "cpaid") return "Corp Fund Paid";
     return custom.find((c) => c.id === k)?.name || colName(k, settings, m);
@@ -300,8 +308,8 @@ export default function MonthTab({
   const statusOf = (f: Flat): Status => {
     const p = P(f);
     return payStatus(
-      M(f) + C(f),
-      (p.maint || 0) + (p.corp || 0),
+      mergeMaintenanceCorp ? M(f) : M(f) + C(f),
+      mergeMaintenanceCorp ? p.maint || 0 : (p.maint || 0) + (p.corp || 0),
       isMaintExcluded(m, f),
     );
   };
@@ -317,7 +325,7 @@ export default function MonthTab({
     cd = sum(flats, C),
     mpd = sum(flats, (f) => P(f).maint),
     cpd = sum(flats, (f) => P(f).corp);
-  const actualTotalPaid = mpd + cpd;
+  const actualTotalPaid = mergeMaintenanceCorp ? mpd : mpd + cpd;
   const completionBalance =
     Math.round((actualTotalPaid - total(m)) * 100) / 100;
   const isCompleted = Boolean(m.notes?.completion);
@@ -343,14 +351,14 @@ export default function MonthTab({
     flat: showName ? "" : "TOTAL",
     bua: n2(sum(flats, (f) => f.bua)),
     uds: n2(sum(flats, (f) => f.uds)),
-    maint: n2(due),
-    corp: n2(cd),
-    texp: n2(due + cd),
+    maint: n2(mergeMaintenanceCorp ? due : due),
+    corp: n2(mergeMaintenanceCorp ? 0 : cd),
+    texp: n2(mergeMaintenanceCorp ? due : due + cd),
     mpaid: n2(mpd),
-    cpaid: n2(cpd),
-    tpaid: n2(mpd + cpd),
+    cpaid: n2(mergeMaintenanceCorp ? 0 : cpd),
+    tpaid: n2(mergeMaintenanceCorp ? mpd : mpd + cpd),
     mdiff: n2(mpd - due),
-    cdiff: n2(cpd - cd),
+    cdiff: n2(mergeMaintenanceCorp ? 0 : cpd - cd),
   };
   const corpFundEnabled = m.corp_applicable !== false;
   const renderPaymentTable = (
@@ -399,6 +407,7 @@ export default function MonthTab({
               onDraftChange={onDraftChange}
               bulkApply={{ ...bulk, token: bulkToken }}
               paymentPart={paymentPart}
+              merged={mergeMaintenanceCorp && paymentPart === "maintenance"}
               excluded={paymentPart === "maintenance" && isMaintExcluded(m, f)}
               split={splitOf(settings)}
               onHistory={
@@ -763,10 +772,9 @@ export default function MonthTab({
             <b>Bulk fill payments</b>
             <span className="muted">
               Fill the boxes below for every flat at once — handy for flats
-              still left blank. "Total paid" is split per flat into maintenance
-              and Corp Fund by that flat's own dues (rule in Settings); Maint. /
-              Corp paid, if filled, override their part. Nothing is saved to the
-              database until you click Save All.
+              still left blank. "Total paid" is split per flat into Maintenance
+              and Corp Fund by that flat's dues (rule in Settings). Nothing is
+              saved to the database until you click Save All.
             </span>
             <div className="row" style={{ flexWrap: "wrap" }}>
               <label className="opt">
@@ -781,28 +789,34 @@ export default function MonthTab({
                   onChange={(e) => setBulk({ ...bulk, total: e.target.value })}
                 />
               </label>
-              <label className="opt">
-                <span>Maint. paid</span>
-                <input
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  placeholder="e.g. 3400"
-                  value={bulk.maint}
-                  onChange={(e) => setBulk({ ...bulk, maint: e.target.value })}
-                />
-              </label>
-              <label className="opt">
-                <span>Corp paid</span>
-                <input
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  placeholder="e.g. 600"
-                  value={bulk.corp}
-                  onChange={(e) => setBulk({ ...bulk, corp: e.target.value })}
-                />
-              </label>
+              {!mergeMaintenanceCorp && (
+                <label className="opt">
+                  <span>Maint. paid</span>
+                  <input
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="e.g. 3400"
+                    value={bulk.maint}
+                    onChange={(e) =>
+                      setBulk({ ...bulk, maint: e.target.value })
+                    }
+                  />
+                </label>
+              )}
+              {!mergeMaintenanceCorp && (
+                <label className="opt">
+                  <span>Corp paid</span>
+                  <input
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="e.g. 600"
+                    value={bulk.corp}
+                    onChange={(e) => setBulk({ ...bulk, corp: e.target.value })}
+                  />
+                </label>
+              )}
               <label className="opt">
                 <span>Mode</span>
                 <select
@@ -1051,17 +1065,19 @@ export default function MonthTab({
             <div>
               <h3>Maintenance payments</h3>
               <p className="muted">
-                Maintenance charges, amounts received, and maintenance
-                collection totals.
+                {mergeMaintenanceCorp
+                  ? "Combined Maintenance + Corp Fund charges and one total payment entry, stored under Maintenance."
+                  : "Maintenance charges, amounts received, and maintenance collection totals."}
               </p>
             </div>
             <strong>
-              {inr(due)} expected · {inr(mpd)} collected
+              {inr(mergeMaintenanceCorp ? due : due)} expected ·{" "}
+              {inr(mergeMaintenanceCorp ? mpd : mpd)} collected
             </strong>
           </div>
           {renderPaymentTable(maintenanceCols, "maintenance")}
         </section>
-        {corpFundEnabled && (
+        {corpFundEnabled && !mergeMaintenanceCorp && (
           <section
             className="card month-payment-section"
             aria-label="Corp Fund payments"

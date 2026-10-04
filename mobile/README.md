@@ -37,7 +37,7 @@ npm start            # Metro
 npm run android      # or: npm run ios  (cd ios && bundle exec pod install first)
 ```
 
-The default server is `https://apartment-association-portal.vercel.app` in `src/core/config.ts` (`DEFAULT_API_BASE_URL`). On first launch after this update, the app clears any old RV Fallon server selection and session so you can sign in to the Apartment Association Portal
+Set the server in `src/core/config.ts` (`DEFAULT_API_BASE_URL`), or on the login screen under **Server settings**
 (HTTPS only; remembered, encrypted, on the device). Native requests send no `Origin`, so no CORS setup is needed.
 
 ## Quality gates

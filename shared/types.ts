@@ -1,5 +1,5 @@
 export type Method = "divide" | "common" | "sqft";
-export type Rounding = "none" | "nearest" | "up";
+export type Rounding = "none" | "nearest" | "up" | "up50" | "up100";
 export type Role =
   "superadmin" | "super" | "admin" | "developer" | "user" | "security";
 export type SplitMode = "maint_first" | "corp_first" | "proportional";
@@ -53,6 +53,8 @@ export interface Month {
     expenses?: string;
     flats?: string;
     expensesStage?: "expected" | "actual";
+    /** Show one combined resident-facing charge while preserving internal Corp Fund accounting. */
+    mergeMaintenanceCorp?: boolean;
     /** Prior unpaid dues carried into this month. Combined arrears are stored in maintenance. */
     carryForward?: Record<
       string,

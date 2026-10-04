@@ -8,14 +8,11 @@ export interface Auth {
 const AUTH_KEY = 'rv_auth';
 const SERVER_KEY = 'rv_server';
 const MONTH_KEY = 'rv_selected_month';
-const API_SERVER_VERSION_KEY = 'rv_api_server_version';
 
 export const readSession = () => secureGetItem<Auth | null>(AUTH_KEY, null);
 export const writeSession = (a: Auth) => secureSetItem(AUTH_KEY, a);
 export const clearSession = () => secureRemoveItem(AUTH_KEY);
 export const readServer = () => secureGetItem<string>(SERVER_KEY, '');
 export const writeServer = (v: string) => secureSetItem(SERVER_KEY, v);
-export const readApiServerVersion = () => secureGetItem<string>(API_SERVER_VERSION_KEY, '');
-export const writeApiServerVersion = (v: string) => secureSetItem(API_SERVER_VERSION_KEY, v);
 export const readMonth = () => secureGetItem<string>(MONTH_KEY, '');
 export const writeMonth = (v: string) => secureSetItem(MONTH_KEY, v);
