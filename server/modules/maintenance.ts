@@ -104,13 +104,7 @@ export const actions: Record<string, Action> = {
       ).trim();
       const [submission] = await sql.query(
         `INSERT INTO contact_submissions(name,email,subject,message,submitted_by,status) VALUES($1,$2,$3,$4,$5,'pending') RETURNING id`,
-        [
-          name ? encryptData(name) : "",
-          email ? encryptData(email) : "",
-          subject ? encryptData(subject) : "",
-          message ? encryptData(message) : "",
-          ctx.me.username,
-        ],
+        [name ? encryptData(name) : "", email ? encryptData(email) : "", subject ? encryptData(subject) : "", message ? encryptData(message) : "", ctx.me.username],
       );
       try {
         await sendMail({

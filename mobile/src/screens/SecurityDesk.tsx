@@ -108,11 +108,7 @@ export default function SecurityDesk({ token }: ScreenProps) {
       }
       setPhotoData(data);
       setError(false);
-      setMessage(
-        mode === 'parcel'
-          ? 'Parcel photo captured. Send the parcel notice to the flat owner.'
-          : 'Photo captured. Send it to the flat owner for approval.',
-      );
+      setMessage(mode === 'parcel' ? 'Parcel photo captured. Send the parcel notice to the flat owner.' : 'Photo captured. Send it to the flat owner for approval.');
     } catch (e) {
       setError(true);
       setMessage(errText(e));
@@ -128,31 +124,15 @@ export default function SecurityDesk({ token }: ScreenProps) {
     setBusy(true);
     setMessage('');
     try {
-      const result = await call<{ notice: { id: number; status: 'pending' | 'collected' } }>(
-        {
-          action: 'createParcelNotice',
-          flat: parcelFlat.trim(),
-          courier: parcelCourier.trim(),
-          trackingNumber: parcelTracking.trim(),
-          notes: parcelNotes.trim(),
-          photoData,
-        },
-        token,
-      );
+      const result = await call<{ notice: { id: number; status: 'pending' | 'collected' } }>({ action: 'createParcelNotice', flat: parcelFlat.trim(), courier: parcelCourier.trim(), trackingNumber: parcelTracking.trim(), notes: parcelNotes.trim(), photoData }, token);
       setPhotoData('');
       setParcelSent(true);
       setError(false);
       setMessage(`Parcel notice #${result.notice.id} sent to flat ${parcelFlat}.`);
       showAppDialog('Parcel notice sent', `Flat ${parcelFlat} has been notified about the parcel.`);
-      setParcelCourier('');
-      setParcelTracking('');
-      setParcelNotes('');
-    } catch (e) {
-      setError(true);
-      setMessage(errText(e));
-    } finally {
-      setBusy(false);
-    }
+      setParcelCourier(''); setParcelTracking(''); setParcelNotes('');
+    } catch (e) { setError(true); setMessage(errText(e)); }
+    finally { setBusy(false); }
   };
 
   const submit = async () => {
@@ -164,19 +144,13 @@ export default function SecurityDesk({ token }: ScreenProps) {
     setBusy(true);
     setMessage('');
     try {
-      const result = await call<{ request: { id: number; status: 'pending' | 'approved' | 'rejected' } }>(
-        { action: 'createVisitorPhotoRequest', accessCodeId: visitor.id, photoData },
-        token,
-      );
+      const result = await call<{ request: { id: number; status: 'pending' | 'approved' | 'rejected' } }>({ action: 'createVisitorPhotoRequest', accessCodeId: visitor.id, photoData }, token);
       setRequestId(result.request.id);
       setRequestStatus(result.request.status);
       setPhotoData('');
       setError(false);
       setMessage('Visitor photo submitted. Waiting for the flat owner. Use Check approval status before allowing entry.');
-      showAppDialog(
-        'Sent for approval',
-        `Visitor photo for flat ${visitor.flat} has been sent to the flat owner. Entry remains pending until approved.`,
-      );
+      showAppDialog('Sent for approval', `Visitor photo for flat ${visitor.flat} has been sent to the flat owner. Entry remains pending until approved.`);
     } catch (e) {
       setError(true);
       setMessage(errText(e));
@@ -189,10 +163,7 @@ export default function SecurityDesk({ token }: ScreenProps) {
     if (!requestId) return;
     setBusy(true);
     try {
-      const result = await call<{ request: { status: 'pending' | 'approved' | 'rejected'; review_note?: string } }>(
-        { action: 'getVisitorPhotoRequestStatus', id: requestId },
-        token,
-      );
+      const result = await call<{ request: { status: 'pending' | 'approved' | 'rejected'; review_note?: string } }>({ action: 'getVisitorPhotoRequestStatus', id: requestId }, token);
       setRequestStatus(result.request.status);
       if (result.request.status === 'approved') {
         setError(false);
@@ -254,91 +225,45 @@ export default function SecurityDesk({ token }: ScreenProps) {
       <Section title="Security desk">
         <Text style={s.muted}>Choose whether you are checking a visitor or recording a parcel delivery.</Text>
         <View style={{ marginTop: 8, gap: 2, alignItems: 'stretch' }}>
-          <Button
-            title={mode === 'visitor' ? '✓  Visitor access' : 'Visitor access'}
-            onPress={() => {
-              setMode('visitor');
-              setPhotoData('');
-              setMessage('');
-              setError(false);
-            }}
-            kind={mode === 'visitor' ? 'primary' : 'secondary'}
-          />
-          <Button
-            title={mode === 'parcel' ? '✓  Parcel notice' : 'Parcel notice'}
-            onPress={() => {
-              setMode('parcel');
-              setVisitor(null);
-              setPhotoData('');
-              setMessage('');
-              setError(false);
-              setScanning(false);
-            }}
-            kind={mode === 'parcel' ? 'primary' : 'secondary'}
-          />
+          <Button title={mode === 'visitor' ? '✓  Visitor access' : 'Visitor access'} onPress={() => { setMode('visitor'); setPhotoData(''); setMessage(''); setError(false); }} kind={mode === 'visitor' ? 'primary' : 'secondary'} />
+          <Button title={mode === 'parcel' ? '✓  Parcel notice' : 'Parcel notice'} onPress={() => { setMode('parcel'); setVisitor(null); setPhotoData(''); setMessage(''); setError(false); setScanning(false); }} kind={mode === 'parcel' ? 'primary' : 'secondary'} />
         </View>
       </Section>
-      {mode === 'visitor' && (
-        <Section title="Scan visitor QR code">
-          <Text style={s.muted}>
-            Scan the QR code shared by a resident, or enter the 6-digit code manually. Verify the visitor, take a photo, and send it to the
-            flat owner. Entry remains pending until the owner approves.
-          </Text>
-          <View style={[s.rowWrap, { marginTop: 10 }]}>
-            <Button
-              title={scanning ? 'Close scanner' : 'Scan QR code'}
-              onPress={() => void toggleScanner()}
-              kind="secondary"
-              fullWidth={false}
+      {mode === 'visitor' && <Section title="Scan visitor QR code">
+        <Text style={s.muted}>Scan the QR code shared by a resident, or enter the 6-digit code manually. Verify the visitor, take a photo, and send it to the flat owner. Entry remains pending until the owner approves.</Text>
+        <View style={[s.rowWrap, { marginTop: 10 }]}>
+          <Button title={scanning ? 'Close scanner' : 'Scan QR code'} onPress={() => void toggleScanner()} kind="secondary" fullWidth={false} />
+        </View>
+        {scanning && (
+          <View style={{ height: 300, overflow: 'hidden', borderRadius: 12, marginTop: 12 }}>
+            <Camera
+              style={{ flex: 1, width: '100%' }}
+              scanBarcode
+              onReadCode={onScan}
+              showFrame
+              laserColor="#2E7D32"
+              frameColor="#ffffff"
             />
           </View>
-          {scanning && (
-            <View style={{ height: 300, overflow: 'hidden', borderRadius: 12, marginTop: 12 }}>
-              <Camera
-                style={{ flex: 1, width: '100%' }}
-                scanBarcode
-                onReadCode={onScan}
-                showFrame
-                laserColor="#2E7D32"
-                frameColor="#ffffff"
-              />
-            </View>
-          )}
-          <Field
-            label="6-digit access code"
-            value={code}
-            onChangeText={(value) => {
-              setCode(value.replace(/\D/g, '').slice(0, 6));
-              setVisitor(null);
-              setPhotoData('');
-            }}
-            keyboardType="number-pad"
-            maxLength={6}
-            placeholder="000000"
-            textContentType="oneTimeCode"
-          />
-          <Button title="Verify access code" onPress={() => void lookup()} busy={busy} disabled={code.length !== 6} />
-        </Section>
-      )}
+        )}
+        <Field
+          label="6-digit access code"
+          value={code}
+          onChangeText={(value) => { setCode(value.replace(/\D/g, '').slice(0, 6)); setVisitor(null); setPhotoData(''); }}
+          keyboardType="number-pad"
+          maxLength={6}
+          placeholder="000000"
+          textContentType="oneTimeCode"
+        />
+        <Button title="Verify access code" onPress={() => void lookup()} busy={busy} disabled={code.length !== 6} />
+      </Section>}
 
       {mode === 'parcel' && (
         <Section title="Record parcel delivery">
-          <Text style={s.muted}>
-            Take a photo of the parcel or delivery label. The flat owner will receive a notice and can mark it collected.
-          </Text>
+          <Text style={s.muted}>Take a photo of the parcel or delivery label. The flat owner will receive a notice and can mark it collected.</Text>
           <Field label="Destination flat *" value={parcelFlat} onChangeText={setParcelFlat} placeholder="e.g. 101" />
-          <Field
-            label="Courier / delivery company"
-            value={parcelCourier}
-            onChangeText={setParcelCourier}
-            placeholder="e.g. Amazon, Blue Dart, India Post"
-          />
-          <Field
-            label="Tracking / reference number"
-            value={parcelTracking}
-            onChangeText={setParcelTracking}
-            placeholder="Optional tracking number"
-          />
+          <Field label="Courier / delivery company" value={parcelCourier} onChangeText={setParcelCourier} placeholder="e.g. Amazon, Blue Dart, India Post" />
+          <Field label="Tracking / reference number" value={parcelTracking} onChangeText={setParcelTracking} placeholder="Optional tracking number" />
           <Field label="Notes" value={parcelNotes} onChangeText={setParcelNotes} placeholder="Package location, recipient name, etc." />
           <Button title={photoData ? 'Retake parcel photo' : 'Take parcel photo'} onPress={() => void capturePhoto()} kind="secondary" />
           {!!photoData && <Text style={s.ok}>Parcel photo captured and ready to send.</Text>}
@@ -349,13 +274,8 @@ export default function SecurityDesk({ token }: ScreenProps) {
 
       {mode === 'visitor' && visitor && (
         <Section title="Visitor details">
-          <View style={s.rowBetween}>
-            <Text style={s.rowTitle}>{visitor.visitor_name}</Text>
-            <Badge text="Pending owner approval" tone="warn" />
-          </View>
-          <Text style={s.muted}>
-            Flat {visitor.flat} · {visitor.purpose || 'Visitor'}
-          </Text>
+          <View style={s.rowBetween}><Text style={s.rowTitle}>{visitor.visitor_name}</Text><Badge text="Pending owner approval" tone="warn" /></View>
+          <Text style={s.muted}>Flat {visitor.flat} · {visitor.purpose || 'Visitor'}</Text>
           {!!visitor.phone && <Text style={s.muted}>Phone: {visitor.phone}</Text>}
           <Text style={s.small}>Code expires {new Date(visitor.expires_at).toLocaleString()}</Text>
           <Button title={photoData ? 'Retake visitor photo' : 'Take visitor photo'} onPress={() => void capturePhoto()} kind="secondary" />
@@ -365,13 +285,7 @@ export default function SecurityDesk({ token }: ScreenProps) {
       )}
       {mode === 'visitor' && requestId !== null && (
         <Section title="Owner approval status">
-          <View style={s.rowBetween}>
-            <Text style={s.rowTitle}>Request #{requestId}</Text>
-            <Badge
-              text={requestStatus || 'pending'}
-              tone={requestStatus === 'approved' ? 'ok' : requestStatus === 'rejected' ? 'bad' : 'warn'}
-            />
-          </View>
+          <View style={s.rowBetween}><Text style={s.rowTitle}>Request #{requestId}</Text><Badge text={requestStatus || 'pending'} tone={requestStatus === 'approved' ? 'ok' : requestStatus === 'rejected' ? 'bad' : 'warn'} /></View>
           <Button title="Check approval status" onPress={() => void checkApproval()} busy={busy} kind="secondary" />
           {requestStatus === 'approved' && <Text style={s.ok}>Owner approved. You may allow entry.</Text>}
           {requestStatus === 'rejected' && <Text style={s.danger}>Owner rejected. Do not allow entry.</Text>}

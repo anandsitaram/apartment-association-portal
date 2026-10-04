@@ -26,7 +26,10 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
   const [expandedCarry, setExpandedCarry] = useState(false);
 
   const allSummary = useMemo(() => buildSummary(data, data.flats), [data]);
-  const filteredSummary = useMemo(() => (fy == null ? allSummary : buildSummary(data, data.flats, fy)), [data, fy, allSummary]);
+  const filteredSummary = useMemo(
+    () => (fy == null ? allSummary : buildSummary(data, data.flats, fy)),
+    [data, fy, allSummary],
+  );
 
   const S = fy != null && filteredSummary.ms.length === 0 ? allSummary : filteredSummary;
 
@@ -68,7 +71,10 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
   // Carried forward months in period
   const carryMonths = data.months
     .filter(
-      (item) => (fy == null || fyOfMonth(item.month) === fy) && item.notes?.carryForward && Object.keys(item.notes.carryForward).length > 0,
+      (item) =>
+        (fy == null || fyOfMonth(item.month) === fy) &&
+        item.notes?.carryForward &&
+        Object.keys(item.notes.carryForward).length > 0,
     )
     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -113,8 +119,8 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
       {isDuePassed && (
         <View style={s.banner}>
           <Text style={s.bannerText}>
-            Payment due date ({dueDateText(month.month, data.settings.dueDay)}) has passed. Please review the Months page for outstanding
-            balances.
+            Payment due date ({dueDateText(month.month, data.settings.dueDay)}) has passed. Please review the Months page for
+            outstanding balances.
           </Text>
         </View>
       )}
@@ -128,7 +134,8 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
           <>
             <Text style={s.heroValue}>{inr0(periodPaid)}</Text>
             <Text style={s.heroLabel}>
-              collected across {S.ms.length} month(s) · {periodBalance < -0.005 ? 'surplus' : 'balance'} {inr0(Math.abs(periodBalance))}
+              collected across {S.ms.length} month(s) · {periodBalance < -0.005 ? 'surplus' : 'balance'}{' '}
+              {inr0(Math.abs(periodBalance))}
             </Text>
             <ProgressBar ratio={ratio} />
           </>
@@ -192,7 +199,10 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
               const entries = Object.entries(item.notes?.carryForward || {}).sort(([a], [b]) =>
                 a.localeCompare(b, undefined, { numeric: true }),
               );
-              const monthTotal = entries.reduce((sub, [, amt]) => sub + (Number(amt?.maintenance) || 0) + (Number(amt?.corp) || 0), 0);
+              const monthTotal = entries.reduce(
+                (sub, [, amt]) => sub + (Number(amt?.maintenance) || 0) + (Number(amt?.corp) || 0),
+                0,
+              );
               return (
                 <View key={item.month} style={[s.listRow, { marginTop: 6 }]}>
                   <Text style={s.rowTitle}>
@@ -271,7 +281,9 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
               <View>
                 <Text style={s.rowTitle}>Party Hall</Text>
                 <Text style={s.small}>
-                  {upcomingHall[0] ? `${upcomingHall[0].title} · ${shortDate(upcomingHall[0].starts_at)}` : 'No upcoming bookings'}
+                  {upcomingHall[0]
+                    ? `${upcomingHall[0].title} · ${shortDate(upcomingHall[0].starts_at)}`
+                    : 'No upcoming bookings'}
                 </Text>
               </View>
             </View>
@@ -286,7 +298,9 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
               <View>
                 <Text style={s.rowTitle}>Community Events</Text>
                 <Text style={s.small}>
-                  {upcomingEvents[0] ? `${upcomingEvents[0].title} · ${shortDate(upcomingEvents[0].starts_at)}` : 'No upcoming events'}
+                  {upcomingEvents[0]
+                    ? `${upcomingEvents[0].title} · ${shortDate(upcomingEvents[0].starts_at)}`
+                    : 'No upcoming events'}
                 </Text>
               </View>
             </View>
@@ -314,7 +328,9 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
               <View>
                 <Text style={s.rowTitle}>Gym Booking</Text>
                 <Text style={s.small}>
-                  {upcomingGym[0] ? `${upcomingGym[0].title} · ${shortDate(upcomingGym[0].starts_at)}` : 'No upcoming bookings'}
+                  {upcomingGym[0]
+                    ? `${upcomingGym[0].title} · ${shortDate(upcomingGym[0].starts_at)}`
+                    : 'No upcoming bookings'}
                 </Text>
               </View>
             </View>

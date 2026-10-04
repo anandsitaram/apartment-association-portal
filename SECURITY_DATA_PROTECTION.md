@@ -26,6 +26,7 @@ This does **not** encrypt every individual relational column at the application 
 
 Schema version is bumped to 27. Deploy with a valid `ENCRYPTION_SECRET`. Take a database snapshot first and verify backup restoration before deploying to production.
 
+
 ## Security hardening notes (2026-10)
 
 - Visitor access codes are restricted to the linked resident account and its flat. Admin roles do not receive resident visitor-code lists or create/delete codes for other flats. Visitor-photo approval and gate verification reject expired codes.

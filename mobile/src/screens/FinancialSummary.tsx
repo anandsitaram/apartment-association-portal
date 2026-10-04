@@ -74,8 +74,8 @@ export default function FinancialSummary({ data }: ScreenProps) {
       </Section>
       <Section title="Reports & export">
         <Text style={s.muted}>
-          Export the currently filtered month totals as plain-text CSV using your device's share sheet. CSV exports are not encrypted and
-          may contain confidential financial information. Share only with trusted recipients and avoid public/shared devices.
+          Export the currently filtered month totals as plain-text CSV using your device's share sheet. CSV exports are not encrypted and may
+          contain confidential financial information. Share only with trusted recipients and avoid public/shared devices.
         </Text>
         <Button title="Share financial summary CSV" onPress={() => void exportCsv()} busy={sharing} />
       </Section>

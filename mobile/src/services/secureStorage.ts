@@ -28,11 +28,7 @@ export async function secureGetItem<T>(key: string, fallback: T): Promise<T> {
   const service = serviceFor(key);
   const secure = await Keychain.getGenericPassword({ service });
   if (secure && secure.password) {
-    try {
-      return JSON.parse(secure.password) as T;
-    } catch {
-      return fallback;
-    }
+    try { return JSON.parse(secure.password) as T; } catch { return fallback; }
   }
 
   const raw = await AsyncStorage.getItem(key);

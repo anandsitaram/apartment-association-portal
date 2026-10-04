@@ -17,19 +17,14 @@ function parseCsv(text: string): Record<string, string>[] {
   for (let i = 0; i < input.length; i++) {
     const ch = input[i];
     if (quoted) {
-      if (ch === '"' && input[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else if (ch === '"') quoted = false;
+      if (ch === '"' && input[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = false;
       else cell += ch;
     } else if (ch === '"') quoted = true;
-    else if (ch === ',') {
-      row.push(cell);
-      cell = '';
-    } else if (ch === '\n' || ch === '\r') {
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') {
       if (ch === '\r' && input[i + 1] === '\n') i++;
-      row.push(cell);
-      cell = '';
+      row.push(cell); cell = '';
       if (row.some((v) => v.trim())) rows.push(row);
       row = [];
     } else cell += ch;
@@ -37,12 +32,7 @@ function parseCsv(text: string): Record<string, string>[] {
   row.push(cell);
   if (row.some((v) => v.trim())) rows.push(row);
   if (rows.length < 2) throw new Error('CSV must contain a header row and at least one flat record.');
-  const headers = rows[0].map((h) =>
-    h
-      .trim()
-      .toLowerCase()
-      .replace(/[\s_-]+/g, ''),
-  );
+  const headers = rows[0].map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ''));
   if (!headers.includes('flat')) throw new Error('CSV header must include a flat column.');
   return rows.slice(1).map((values) => {
     const record: Record<string, string> = {};
@@ -107,22 +97,9 @@ export default function Flats({ data, admin, save }: ScreenProps) {
     setExportBusy(true);
     try {
       const headers = ['flat', 'name', 'type', 'bua', 'uds', 'phone', 'email', 'excluded', 'corpexcluded'];
-      const rows = [
-        headers,
-        ...[...data.flats]
-          .sort((a, b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }))
-          .map((f) => [
-            f.flat,
-            f.name || '',
-            f.type || '',
-            f.bua,
-            f.uds,
-            f.phone || '',
-            f.email || '',
-            f.excluded ? 'TRUE' : 'FALSE',
-            f.corp_excluded ? 'TRUE' : 'FALSE',
-          ]),
-      ];
+      const rows = [headers, ...[...data.flats].sort((a, b) => a.flat.localeCompare(b.flat, undefined, { numeric: true })).map((f) => [
+        f.flat, f.name || '', f.type || '', f.bua, f.uds, f.phone || '', f.email || '', f.excluded ? 'TRUE' : 'FALSE', f.corp_excluded ? 'TRUE' : 'FALSE',
+      ])];
       const worksheet = XLSX.utils.aoa_to_sheet(rows);
       worksheet['!cols'] = headers.map((header) => ({ wch: Math.max(14, header.length + 2) }));
       const workbook = XLSX.utils.book_new();
@@ -130,13 +107,7 @@ export default function Flats({ data, admin, save }: ScreenProps) {
       const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
       const path = `${RNFS.CachesDirectoryPath}/my-apartment-flat-master-${new Date().toISOString().slice(0, 10)}.xlsx`;
       await RNFS.writeFile(path, base64, 'base64');
-      await Share.open({
-        title: 'My Apartment flat master Excel',
-        url: `file://${path}`,
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        filename: `my-apartment-flat-master-${new Date().toISOString().slice(0, 10)}.xlsx`,
-        failOnCancel: false,
-      });
+      await Share.open({ title: 'My Apartment flat master Excel', url: `file://${path}`, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename: `my-apartment-flat-master-${new Date().toISOString().slice(0, 10)}.xlsx`, failOnCancel: false });
     } catch (error) {
       setImportError(error instanceof Error ? error.message : 'Could not create or share the Excel workbook.');
     } finally {
@@ -273,19 +244,10 @@ export default function Flats({ data, admin, save }: ScreenProps) {
       {admin && (
         <Section title="Flat data import & export">
           <Text style={s.muted}>
-            Export flat master records for Excel, or paste CSV/JSON records to import. Create mode requires flat and bua; update mode
-            matches flat and leaves blank fields unchanged. Maximum 500 rows. Login accounts are managed separately.
+            Export flat master records for Excel, or paste CSV/JSON records to import. Create mode requires flat and bua; update mode matches flat and leaves blank fields unchanged. Maximum 500 rows. Login accounts are managed separately.
           </Text>
-          <Button
-            title={exportBusy ? 'Preparing export…' : 'Export flats to Excel (.xlsx)'}
-            kind="secondary"
-            onPress={() => void exportFlatExcel()}
-            busy={exportBusy}
-          />
-          <Text style={s.small}>
-            For import, use CSV or JSON headers: flat, name, type, bua, uds, phone, email, excluded, corpexcluded. Excel exports contain
-            owner contact details, so share them only with authorized people.
-          </Text>
+          <Button title={exportBusy ? 'Preparing export…' : 'Export flats to Excel (.xlsx)'} kind="secondary" onPress={() => void exportFlatExcel()} busy={exportBusy} />
+          <Text style={s.small}>For import, use CSV or JSON headers: flat, name, type, bua, uds, phone, email, excluded, corpexcluded. Excel exports contain owner contact details, so share them only with authorized people.</Text>
           <View style={s.rowWrap}>
             <Button
               title="Create new flats"
@@ -307,13 +269,10 @@ export default function Flats({ data, admin, save }: ScreenProps) {
             multiline
             numberOfLines={7}
             textAlignVertical="top"
-            placeholder={
-              'flat,name,type,bua,uds,phone,email,excluded,corpexcluded\nA-101,Resident,N,1200,300,9876543210,resident@example.com,FALSE,FALSE'
-            }
+            placeholder={'flat,name,type,bua,uds,phone,email,excluded,corpexcluded\nA-101,Resident,N,1200,300,9876543210,resident@example.com,FALSE,FALSE'}
           />
           <Text style={s.small}>
-            Paste CSV rows or a JSON array. Create mode skips existing flats. Update mode changes matching records; blank fields remain
-            unchanged.
+            Paste CSV rows or a JSON array. Create mode skips existing flats. Update mode changes matching records; blank fields remain unchanged.
           </Text>
           {!!importError && <Text style={s.danger}>{importError}</Text>}
           <Button title="Import flat records (CSV / JSON)" onPress={importFlats} busy={importBusy} disabled={!importJson.trim()} />

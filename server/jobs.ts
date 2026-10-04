@@ -213,9 +213,7 @@ export async function runDaily(now = new Date()) {
         attachments: [
           {
             filename: `${orgShort}-backup-${now.toISOString().slice(0, 10)}.json`,
-            content: Buffer.from(JSON.stringify(protectBackup(data))).toString(
-              "base64",
-            ),
+            content: Buffer.from(JSON.stringify(protectBackup(data))).toString("base64"),
           },
         ],
       });

@@ -8,32 +8,10 @@ import s from '../styles/styles';
 import { showAppDialog } from '../core/appDialog';
 
 type PhotoRequest = {
-  id: number;
-  visitor_name: string;
-  flat: string;
-  purpose: string;
-  phone?: string;
-  photo_data: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_by: string;
-  created_at: string;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  review_note?: string;
+  id: number; visitor_name: string; flat: string; purpose: string; phone?: string; photo_data: string;
+  status: 'pending' | 'approved' | 'rejected'; created_by: string; created_at: string; reviewed_by?: string | null; reviewed_at?: string | null; review_note?: string;
 };
-type ParcelNotice = {
-  id: number;
-  flat: string;
-  courier: string;
-  tracking_number: string;
-  notes: string;
-  photo_data: string;
-  status: 'pending' | 'collected';
-  created_by: string;
-  created_at: string;
-  acknowledged_at?: string | null;
-  acknowledged_by?: string | null;
-};
+type ParcelNotice = { id: number; flat: string; courier: string; tracking_number: string; notes: string; photo_data: string; status: 'pending' | 'collected'; created_by: string; created_at: string; acknowledged_at?: string | null; acknowledged_by?: string | null };
 type CodeRow = {
   id: number;
   code: string;
@@ -47,13 +25,7 @@ type CodeRow = {
   expires_at: string;
   accepted_at?: string | null;
 };
-export default function VisitorAccess({
-  token,
-  data,
-  flat: userFlat,
-  parcelNoticeId,
-  onClearParcelNotice,
-}: ScreenProps & { parcelNoticeId?: number | null; onClearParcelNotice?: () => void }) {
+export default function VisitorAccess({ token, data, flat: userFlat, parcelNoticeId, onClearParcelNotice }: ScreenProps & { parcelNoticeId?: number | null; onClearParcelNotice?: () => void }) {
   const [rows, setRows] = useState<CodeRow[]>([]);
   const [photoRequests, setPhotoRequests] = useState<PhotoRequest[]>([]);
   const [parcelNotices, setParcelNotices] = useState<ParcelNotice[]>([]);
@@ -146,52 +118,31 @@ export default function VisitorAccess({
     const actionLabel = status === 'approved' ? 'Approve entry' : 'Reject entry';
     showAppDialog(`${actionLabel}?`, `${status === 'approved' ? 'Allow' : 'Deny'} access for ${row.visitor_name} to flat ${row.flat}?`, [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: actionLabel,
-        style: status === 'rejected' ? 'destructive' : 'default',
-        onPress: async () => {
-          try {
-            await call({ action: 'reviewVisitorPhotoRequest', id: row.id, status }, token);
-            await load();
-          } catch (e) {
-            setError(errText(e));
-          }
-        },
-      },
+      { text: actionLabel, style: status === 'rejected' ? 'destructive' : 'default', onPress: async () => {
+        try {
+          await call({ action: 'reviewVisitorPhotoRequest', id: row.id, status }, token);
+          await load();
+        } catch (e) { setError(errText(e)); }
+      } },
     ]);
   };
 
   const markParcelCollected = (notice: ParcelNotice) =>
     showAppDialog('Mark parcel as collected?', `Confirm that the parcel for flat ${notice.flat} has been collected.`, [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Mark collected',
-        onPress: async () => {
-          try {
-            await call({ action: 'acknowledgeParcelNotice', id: notice.id }, token);
-            await load();
-          } catch (e) {
-            setError(errText(e));
-          }
-        },
-      },
+      { text: 'Mark collected', onPress: async () => {
+        try { await call({ action: 'acknowledgeParcelNotice', id: notice.id }, token); await load(); }
+        catch (e) { setError(errText(e)); }
+      } },
     ]);
 
   const deleteParcelPhoto = (notice: ParcelNotice) =>
     showAppDialog('Delete parcel photo?', `Remove the parcel photo for flat ${notice.flat}? The parcel notice will remain available.`, [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete photo',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await call({ action: 'deleteParcelPhoto', id: notice.id }, token);
-            await load();
-          } catch (e) {
-            setError(errText(e));
-          }
-        },
-      },
+      { text: 'Delete photo', style: 'destructive', onPress: async () => {
+        try { await call({ action: 'deleteParcelPhoto', id: notice.id }, token); await load(); }
+        catch (e) { setError(errText(e)); }
+      } },
     ]);
 
   const remove = (row: CodeRow) =>
@@ -211,56 +162,27 @@ export default function VisitorAccess({
       },
     ]);
 
-  const selectedParcel = viewingParcelId == null ? null : (parcelNotices.find((notice) => notice.id === viewingParcelId) ?? null);
+  const selectedParcel = viewingParcelId == null ? null : parcelNotices.find((notice) => notice.id === viewingParcelId) ?? null;
   if (viewingParcelId != null) {
     return (
       <View>
         <Section title="Parcel details">
-          <Button
-            title="Back to Visitor / Parcel list"
-            kind="secondary"
-            onPress={() => {
-              setViewingParcelId(null);
-              onClearParcelNotice?.();
-            }}
-          />
+          <Button title="Back to Visitor / Parcel list" kind="secondary" onPress={() => { setViewingParcelId(null); onClearParcelNotice?.(); }} />
           {!selectedParcel ? (
             <EmptyState text="Parcel details are unavailable. The notice may have been removed or collected." />
           ) : (
             <View style={s.listRow}>
               <View style={s.rowBetween}>
                 <Text style={s.rowTitle}>Parcel for flat {selectedParcel.flat}</Text>
-                <Badge
-                  text={selectedParcel.status === 'collected' ? 'collected' : 'awaiting collection'}
-                  tone={selectedParcel.status === 'collected' ? 'ok' : 'warn'}
-                />
+                <Badge text={selectedParcel.status === 'collected' ? 'collected' : 'awaiting collection'} tone={selectedParcel.status === 'collected' ? 'ok' : 'warn'} />
               </View>
-              <Text style={s.muted}>
-                {selectedParcel.courier || 'Courier not specified'}
-                {selectedParcel.tracking_number ? ` · ${selectedParcel.tracking_number}` : ''}
-              </Text>
+              <Text style={s.muted}>{selectedParcel.courier || 'Courier not specified'}{selectedParcel.tracking_number ? ` · ${selectedParcel.tracking_number}` : ''}</Text>
               <Text style={s.small}>Received by security: {new Date(selectedParcel.created_at).toLocaleString()}</Text>
               {!!selectedParcel.notes && <Text style={s.muted}>Notes: {selectedParcel.notes}</Text>}
-              {!!selectedParcel.photo_data ? (
-                <Image
-                  source={{ uri: selectedParcel.photo_data }}
-                  resizeMode="contain"
-                  style={{ width: '100%', height: 300, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }}
-                />
-              ) : (
-                <Text style={s.small}>Parcel photo removed.</Text>
-              )}
+              {!!selectedParcel.photo_data ? <Image source={{ uri: selectedParcel.photo_data }} resizeMode="contain" style={{ width: '100%', height: 300, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }} /> : <Text style={s.small}>Parcel photo removed.</Text>}
               <View style={[s.rowWrap, { marginTop: 12 }]}>
-                {selectedParcel.status === 'pending' ? (
-                  <Button title="Mark as collected" onPress={() => markParcelCollected(selectedParcel)} />
-                ) : (
-                  <Text style={s.small}>
-                    Collected {selectedParcel.acknowledged_at ? new Date(selectedParcel.acknowledged_at).toLocaleString() : ''}
-                  </Text>
-                )}
-                {!!selectedParcel.photo_data && (
-                  <Button title="Delete photo" kind="secondary" onPress={() => deleteParcelPhoto(selectedParcel)} />
-                )}
+                {selectedParcel.status === 'pending' ? <Button title="Mark as collected" onPress={() => markParcelCollected(selectedParcel)} /> : <Text style={s.small}>Collected {selectedParcel.acknowledged_at ? new Date(selectedParcel.acknowledged_at).toLocaleString() : ''}</Text>}
+                {!!selectedParcel.photo_data && <Button title="Delete photo" kind="secondary" onPress={() => deleteParcelPhoto(selectedParcel)} />}
               </View>
             </View>
           )}
@@ -286,7 +208,12 @@ export default function VisitorAccess({
           maxLength={100}
           placeholder="Visitor or delivery person"
         />
-        <Field label="Flat number *" value={selectedFlat} onChangeText={setSelectedFlat} placeholder="e.g. 101 or A-101" />
+        <Field
+          label="Flat number *"
+          value={selectedFlat}
+          onChangeText={setSelectedFlat}
+          placeholder="e.g. 101 or A-101"
+        />
         {availableFlats.length > 0 && availableFlats.length <= 20 && (
           <View style={[s.rowWrap, { marginTop: 6 }]}>
             {availableFlats.map((f) => (
@@ -303,89 +230,47 @@ export default function VisitorAccess({
       {!!selectedQr && (
         <Section title="Visitor QR code">
           <Text style={s.muted}>Show this QR code to security at the entrance. It contains only the one-time access code.</Text>
-          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <QRCode value={selectedQr} size={190} backgroundColor="#ffffff" color="#111827" />
-          </View>
+          <View style={{ alignItems: 'center', paddingVertical: 12 }}><QRCode value={selectedQr} size={190} backgroundColor="#ffffff" color="#111827" /></View>
           <Text style={[s.rowTitle, { textAlign: 'center' }]}>{selectedQr}</Text>
           <Button title="Hide QR code" kind="secondary" onPress={() => setSelectedQr('')} />
         </Section>
       )}
-      <Section
-        title={`Parcel notices (${parcelNotices.filter((n) => n.status === 'pending').length} awaiting collection)`}
-        right={<SmallButton title="Refresh" onPress={() => void load()} />}
-      >
-        {!parcelNotices.length ? (
-          <EmptyState text="No parcel notices for your flat." />
-        ) : (
-          parcelNotices.map((notice) => (
-            <View key={notice.id} style={s.listRow}>
-              <View style={s.rowBetween}>
-                <Text style={s.rowTitle}>Parcel for flat {notice.flat}</Text>
-                <Badge
-                  text={notice.status === 'collected' ? 'collected' : 'awaiting collection'}
-                  tone={notice.status === 'collected' ? 'ok' : 'warn'}
-                />
-              </View>
-              <Text style={s.muted}>
-                {notice.courier || 'Courier not specified'}
-                {notice.tracking_number ? ` · ${notice.tracking_number}` : ''}
-              </Text>
-              <Text style={s.small}>Received by security: {new Date(notice.created_at).toLocaleString()}</Text>
-              {!!notice.notes && <Text style={s.muted}>Notes: {notice.notes}</Text>}
-              {!!notice.photo_data ? (
-                <Image
-                  source={{ uri: notice.photo_data }}
-                  resizeMode="contain"
-                  style={{ width: '100%', height: 220, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }}
-                />
-              ) : (
-                <Text style={s.small}>Parcel photo removed.</Text>
-              )}
-              <View style={[s.rowWrap, { marginTop: 8 }]}>
-                {notice.status === 'pending' ? (
-                  <SmallButton title="Mark as collected" onPress={() => markParcelCollected(notice)} />
-                ) : (
-                  <Text style={s.small}>Collected {notice.acknowledged_at ? new Date(notice.acknowledged_at).toLocaleString() : ''}</Text>
-                )}
-                {!!notice.photo_data && <SmallButton title="Delete photo" danger onPress={() => deleteParcelPhoto(notice)} />}
-              </View>
+      <Section title={`Parcel notices (${parcelNotices.filter((n) => n.status === 'pending').length} awaiting collection)`} right={<SmallButton title="Refresh" onPress={() => void load()} />}>
+        {!parcelNotices.length ? <EmptyState text="No parcel notices for your flat." /> : parcelNotices.map((notice) => (
+          <View key={notice.id} style={s.listRow}>
+            <View style={s.rowBetween}>
+              <Text style={s.rowTitle}>Parcel for flat {notice.flat}</Text>
+              <Badge text={notice.status === 'collected' ? 'collected' : 'awaiting collection'} tone={notice.status === 'collected' ? 'ok' : 'warn'} />
             </View>
-          ))
-        )}
+            <Text style={s.muted}>{notice.courier || 'Courier not specified'}{notice.tracking_number ? ` · ${notice.tracking_number}` : ''}</Text>
+            <Text style={s.small}>Received by security: {new Date(notice.created_at).toLocaleString()}</Text>
+            {!!notice.notes && <Text style={s.muted}>Notes: {notice.notes}</Text>}
+            {!!notice.photo_data ? <Image source={{ uri: notice.photo_data }} resizeMode="contain" style={{ width: '100%', height: 220, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }} /> : <Text style={s.small}>Parcel photo removed.</Text>}
+            <View style={[s.rowWrap, { marginTop: 8 }]}>
+              {notice.status === 'pending' ? <SmallButton title="Mark as collected" onPress={() => markParcelCollected(notice)} /> : <Text style={s.small}>Collected {notice.acknowledged_at ? new Date(notice.acknowledged_at).toLocaleString() : ''}</Text>}
+              {!!notice.photo_data && <SmallButton title="Delete photo" danger onPress={() => deleteParcelPhoto(notice)} />}
+            </View>
+          </View>
+        ))}
       </Section>
-      <Section
-        title={`Visitor photo approvals (${photoRequests.filter((r) => r.status === 'pending').length} pending`}
-        right={<SmallButton title="Refresh" onPress={() => void load()} />}
-      >
-        {!photoRequests.length ? (
-          <EmptyState text="No visitor photo requests for your flat." />
-        ) : (
-          photoRequests.map((request) => (
-            <View key={request.id} style={s.listRow}>
-              <View style={s.rowBetween}>
-                <Text style={s.rowTitle}>
-                  {request.visitor_name} · Flat {request.flat}
-                </Text>
-                <Badge text={request.status} tone={request.status === 'approved' ? 'ok' : request.status === 'rejected' ? 'bad' : 'warn'} />
-              </View>
-              <Text style={s.muted}>
-                {request.purpose || 'Visitor'} · Submitted {new Date(request.created_at).toLocaleString()}
-              </Text>
-              <Image
-                source={{ uri: request.photo_data }}
-                resizeMode="contain"
-                style={{ width: '100%', height: 240, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }}
-              />
-              {!!request.review_note && <Text style={s.muted}>Note: {request.review_note}</Text>}
-              {request.status === 'pending' && (
-                <View style={[s.rowWrap, { marginTop: 8 }]}>
-                  <SmallButton title="Approve" onPress={() => reviewRequest(request, 'approved')} />
-                  <SmallButton title="Reject" danger onPress={() => reviewRequest(request, 'rejected')} />
-                </View>
-              )}
+      <Section title={`Visitor photo approvals (${photoRequests.filter((r) => r.status === 'pending').length} pending` } right={<SmallButton title="Refresh" onPress={() => void load()} />}>
+        {!photoRequests.length ? <EmptyState text="No visitor photo requests for your flat." /> : photoRequests.map((request) => (
+          <View key={request.id} style={s.listRow}>
+            <View style={s.rowBetween}>
+              <Text style={s.rowTitle}>{request.visitor_name} · Flat {request.flat}</Text>
+              <Badge text={request.status} tone={request.status === 'approved' ? 'ok' : request.status === 'rejected' ? 'bad' : 'warn'} />
             </View>
-          ))
-        )}
+            <Text style={s.muted}>{request.purpose || 'Visitor'} · Submitted {new Date(request.created_at).toLocaleString()}</Text>
+            <Image source={{ uri: request.photo_data }} resizeMode="contain" style={{ width: '100%', height: 240, borderRadius: 10, backgroundColor: '#f3f4f6', marginTop: 8 }} />
+            {!!request.review_note && <Text style={s.muted}>Note: {request.review_note}</Text>}
+            {request.status === 'pending' && (
+              <View style={[s.rowWrap, { marginTop: 8 }]}>
+                <SmallButton title="Approve" onPress={() => reviewRequest(request, 'approved')} />
+                <SmallButton title="Reject" danger onPress={() => reviewRequest(request, 'rejected')} />
+              </View>
+            )}
+          </View>
+        ))}
       </Section>
       <Section title="My visitor codes" right={<SmallButton title="Refresh" onPress={() => void load()} />}>
         {!rows.length ? (
@@ -397,10 +282,7 @@ export default function VisitorAccess({
                 <Text style={s.rowTitle}>
                   {row.visitor_name || 'Visitor'} · {row.code}
                 </Text>
-                <Badge
-                  text={row.status}
-                  tone={row.status === 'accepted' ? 'ok' : row.status === 'expired' || row.status === 'rejected' ? 'bad' : 'warn'}
-                />
+                <Badge text={row.status} tone={row.status === 'accepted' ? 'ok' : row.status === 'expired' || row.status === 'rejected' ? 'bad' : 'warn'} />
               </View>
               <Text style={s.muted}>
                 Flat {row.flat} · {row.purpose || 'Visitor'}

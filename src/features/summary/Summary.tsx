@@ -214,8 +214,7 @@ export default function Summary({
             onClick={async () => {
               const proceed = await openConfirm({
                 title: "Export confidential maintenance data?",
-                message:
-                  "This Excel summary will be downloaded as a regular, unencrypted file and may contain resident or financial information. Continue only on a trusted device and store/share the file securely.",
+                message: "This Excel summary will be downloaded as a regular, unencrypted file and may contain resident or financial information. Continue only on a trusted device and store/share the file securely.",
                 confirmLabel: "Export unencrypted file",
                 cancelLabel: "Cancel",
               });

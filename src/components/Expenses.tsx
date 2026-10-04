@@ -95,27 +95,6 @@ export default function Expenses({
     stage === "actual" && !editingCalculation
       ? (m.calculated_expense_total ?? t)
       : t;
-  const displayRounding =
-    stage === "actual" && !editingCalculation
-      ? m.rounding || rounding
-      : rounding;
-
-  const perFlatBeforeRounding = billingBasisTotal / displayDivisor;
-
-  const perFlatAfterRounding = (() => {
-    switch (displayRounding as string) {
-      case "nearest":
-        return Math.round(perFlatBeforeRounding);
-      case "up":
-        return Math.ceil(perFlatBeforeRounding);
-      case "up50":
-        return Math.ceil(perFlatBeforeRounding / 50) * 50;
-      case "up100":
-        return Math.ceil(perFlatBeforeRounding / 100) * 100;
-      default:
-        return perFlatBeforeRounding;
-    }
-  })();
   const valueForSave = (recalculate: boolean) =>
     stage === "actual" && !recalculate
       ? (m.value ??
@@ -552,16 +531,11 @@ export default function Expenses({
         <b>Maintenance calculation</b>
         <p>{calcText(draft)}</p>
         {method === "divide" ? (
-          <>
-            <p>
-              {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
-              <b>{inr(perFlatBeforeRounding)} per flat</b> before rounding.
-            </p>
-            <p>
-              {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
-              <b>{inr(perFlatAfterRounding)} per flat</b> after rounding.
-            </p>
-          </>
+          <p>
+            {inr(billingBasisTotal)} ÷ {displayDivisor} flats ={" "}
+            <b>{inr(billingBasisTotal / displayDivisor)} per flat</b> before
+            rounding.
+          </p>
         ) : (
           <p>Uses the monthly billing method selected above.</p>
         )}

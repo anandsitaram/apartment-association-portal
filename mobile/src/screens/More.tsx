@@ -87,25 +87,12 @@ export default function More({ items, onOpen, role, username, flat, save, appLoc
     <View>
       <Section title="Account details">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 4 }}>
-          <View
-            style={{
-              width: 58,
-              height: 58,
-              borderRadius: 29,
-              backgroundColor: '#E8F5E9',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: '#C8E6C9',
-            }}
-          >
+          <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#C8E6C9' }}>
             <UserRound size={28} color={GREEN} strokeWidth={1.9} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={{ fontSize: 19, fontWeight: '700', color: '#17351D' }}>{username || 'Account'}</Text>
-            <View
-              style={{ alignSelf: 'flex-start', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#E8F5E9' }}
-            >
+            <View style={{ alignSelf: 'flex-start', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#E8F5E9' }}>
               <Text style={{ fontSize: 12, color: GREEN, fontWeight: '700' }}>{ROLE_LABEL[role] ?? role}</Text>
             </View>
           </View>
@@ -154,34 +141,32 @@ export default function More({ items, onOpen, role, username, flat, save, appLoc
       <Section title="About us">
         <Text style={s.rowTitle}>{APP_BRAND_NAME}</Text>
         <Text style={[s.muted, { marginTop: 6 }]}>
-          A community management app that helps residents and the association coordinate maintenance payments, service requests, bookings,
-          visitor access, and parcel updates.
+          A community management app that helps residents and the association coordinate maintenance payments, service requests, bookings, visitor access, and parcel updates.
         </Text>
       </Section>
       <Section title="Privacy & data protection">
         <Text style={{ color: '#5f5a74', fontSize: 14, lineHeight: 22, marginTop: 2 }}>
-          My Apartment is for association-related activities. The information and actions available to an account are controlled by its
-          assigned role and server-side permissions. Only share information needed to manage community activities, and keep your password
-          and device secure.
+          My Apartment is for association-related activities. The information and actions available to an account are controlled by its assigned role and server-side permissions. Only share information needed to manage community activities, and keep your password and device secure.
         </Text>
         <View style={{ height: 1, backgroundColor: '#E3F0E4', marginVertical: 14 }} />
         <Text style={{ color: '#17351D', fontSize: 14, lineHeight: 21, fontWeight: '700', marginBottom: 6 }}>
           Protections implemented in the app
         </Text>
         <Text style={{ color: '#5f5a74', fontSize: 13, lineHeight: 21 }}>
-          • Account passwords are stored as salted scrypt hashes, not as readable passwords. • The mobile app encrypts locally stored
-          session and selected settings data with AES; its encryption key is stored using the device’s secure Keychain/Keystore facility. •
-          The server encrypts selected sensitive fields, including contact details, using AES-256-GCM when the required server encryption
-          key is configured. • Server-side role checks restrict access to supported features and records. The default server connection uses
-          HTTPS.
+          • Account passwords are stored as salted scrypt hashes, not as readable passwords.
+
+• The mobile app encrypts locally stored session and selected settings data with AES; its encryption key is stored using the device’s secure Keychain/Keystore facility.
+
+• The server encrypts selected sensitive fields, including contact details, using AES-256-GCM when the required server encryption key is configured.
+
+• Server-side role checks restrict access to supported features and records. The default server connection uses HTTPS.
         </Text>
         <View style={{ height: 1, backgroundColor: '#E3F0E4', marginVertical: 14 }} />
-        <Text style={{ color: '#17351D', fontSize: 14, lineHeight: 21, fontWeight: '700', marginBottom: 6 }}>Important limits</Text>
+        <Text style={{ color: '#17351D', fontSize: 14, lineHeight: 21, fontWeight: '700', marginBottom: 6 }}>
+          Important limits
+        </Text>
         <Text style={{ color: '#5f5a74', fontSize: 13, lineHeight: 21 }}>
-          Not every database column is encrypted separately at the application layer. Full database-at-rest encryption and provider-level
-          backup/snapshot encryption depend on the database host and must be verified in its settings. Keep ENCRYPTION_SECRET private and
-          stable; without it, protected data and encrypted backups cannot be decrypted. Use the official server connection and sign out on
-          shared devices.
+          Not every database column is encrypted separately at the application layer. Full database-at-rest encryption and provider-level backup/snapshot encryption depend on the database host and must be verified in its settings. Keep ENCRYPTION_SECRET private and stable; without it, protected data and encrypted backups cannot be decrypted. Use the official server connection and sign out on shared devices.
         </Text>
       </Section>
       <Button

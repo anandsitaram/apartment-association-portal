@@ -378,12 +378,8 @@ export async function ensureSchema(
       review_note text NOT NULL DEFAULT ''
     )`,
   );
-  await q(
-    `CREATE INDEX IF NOT EXISTS visitor_photo_requests_flat_status_idx ON visitor_photo_requests(flat, status, created_at DESC)`,
-  );
-  await q(
-    `CREATE UNIQUE INDEX IF NOT EXISTS visitor_photo_requests_access_code_uq ON visitor_photo_requests(access_code_id) WHERE access_code_id IS NOT NULL`,
-  );
+  await q(`CREATE INDEX IF NOT EXISTS visitor_photo_requests_flat_status_idx ON visitor_photo_requests(flat, status, created_at DESC)`);
+  await q(`CREATE UNIQUE INDEX IF NOT EXISTS visitor_photo_requests_access_code_uq ON visitor_photo_requests(access_code_id) WHERE access_code_id IS NOT NULL`);
   await q(
     `CREATE TABLE IF NOT EXISTS parcel_notices(
       id serial PRIMARY KEY,
@@ -400,9 +396,7 @@ export async function ensureSchema(
       acknowledged_at timestamptz
     )`,
   );
-  await q(
-    `CREATE INDEX IF NOT EXISTS parcel_notices_flat_status_idx ON parcel_notices(flat, status, created_at DESC)`,
-  );
+  await q(`CREATE INDEX IF NOT EXISTS parcel_notices_flat_status_idx ON parcel_notices(flat, status, created_at DESC)`);
   await q(
     `CREATE INDEX IF NOT EXISTS security_events_at_idx ON security_events(at DESC)`,
   );
@@ -458,110 +452,51 @@ export async function ensureSchema(
   // One-time migration: encrypt existing visitor/parcel photos and selected contact fields.
   // Reads through sql.query transparently decrypt ENC:v1 values, so this also safely
   // normalizes older plaintext rows without double-encrypting existing ciphertext.
-  for (const row of await query(
-    "SELECT id, courier, tracking_number, notes, photo_data FROM parcel_notices",
-  )) {
-    const fields = [
-      "courier",
-      "tracking_number",
-      "notes",
-      "photo_data",
-    ] as const;
+  for (const row of await query("SELECT id, courier, tracking_number, notes, photo_data FROM parcel_notices")) {
+    const fields = ["courier", "tracking_number", "notes", "photo_data"] as const;
     for (const field of fields) {
       const value = typeof row[field] === "string" ? row[field] : "";
-      if (value && !value.startsWith("ENC:v1:"))
-        await query(`UPDATE parcel_notices SET ${field}=$2 WHERE id=$1`, [
-          row.id,
-          encryptData(value),
-        ]);
+      if (value && !value.startsWith("ENC:v1:")) await query(`UPDATE parcel_notices SET ${field}=$2 WHERE id=$1`, [row.id, encryptData(value)]);
     }
   }
-  for (const row of await query(
-    "SELECT id, visitor_name, purpose, photo_data, phone, review_note FROM visitor_photo_requests",
-  )) {
-    const fields = [
-      "visitor_name",
-      "purpose",
-      "photo_data",
-      "phone",
-      "review_note",
-    ] as const;
+  for (const row of await query("SELECT id, visitor_name, purpose, photo_data, phone, review_note FROM visitor_photo_requests")) {
+    const fields = ["visitor_name", "purpose", "photo_data", "phone", "review_note"] as const;
     for (const field of fields) {
       const value = typeof row[field] === "string" ? row[field] : "";
-      if (value && !value.startsWith("ENC:v1:"))
-        await query(
-          `UPDATE visitor_photo_requests SET ${field}=$2 WHERE id=$1`,
-          [row.id, encryptData(value)],
-        );
+      if (value && !value.startsWith("ENC:v1:")) await query(`UPDATE visitor_photo_requests SET ${field}=$2 WHERE id=$1`, [row.id, encryptData(value)]);
     }
   }
-  for (const row of await query(
-    "SELECT id, visitor_name, phone, purpose FROM security_access_codes",
-  )) {
+  for (const row of await query("SELECT id, visitor_name, phone, purpose FROM security_access_codes")) {
     const fields = ["visitor_name", "phone", "purpose"] as const;
     for (const field of fields) {
       const value = typeof row[field] === "string" ? row[field] : "";
-      if (value && !value.startsWith("ENC:v1:"))
-        await query(
-          `UPDATE security_access_codes SET ${field}=$2 WHERE id=$1`,
-          [row.id, encryptData(value)],
-        );
+      if (value && !value.startsWith("ENC:v1:")) await query(`UPDATE security_access_codes SET ${field}=$2 WHERE id=$1`, [row.id, encryptData(value)]);
     }
   }
-  for (const row of await query(
-    "SELECT id, name, email, subject, message, error FROM contact_submissions",
-  )) {
+  for (const row of await query("SELECT id, name, email, subject, message, error FROM contact_submissions")) {
     const fields = ["name", "email", "subject", "message", "error"] as const;
     for (const field of fields) {
       const value = typeof row[field] === "string" ? row[field] : "";
-      if (value && !value.startsWith("ENC:v1:"))
-        await query(`UPDATE contact_submissions SET ${field}=$2 WHERE id=$1`, [
-          row.id,
-          encryptData(value),
-        ]);
+      if (value && !value.startsWith("ENC:v1:")) await query(`UPDATE contact_submissions SET ${field}=$2 WHERE id=$1`, [row.id, encryptData(value)]);
     }
   }
   for (const row of await query("SELECT username, phone, email FROM users")) {
     const phone = typeof row.phone === "string" ? row.phone : "";
     const email = typeof row.email === "string" ? row.email : "";
-    if (phone && !phone.startsWith("ENC:v1:"))
-      await query("UPDATE users SET phone=$2 WHERE username=$1", [
-        row.username,
-        encryptData(phone),
-      ]);
-    if (email && !email.startsWith("ENC:v1:"))
-      await query("UPDATE users SET email=$2 WHERE username=$1", [
-        row.username,
-        encryptData(email),
-      ]);
+    if (phone && !phone.startsWith("ENC:v1:")) await query("UPDATE users SET phone=$2 WHERE username=$1", [row.username, encryptData(phone)]);
+    if (email && !email.startsWith("ENC:v1:")) await query("UPDATE users SET email=$2 WHERE username=$1", [row.username, encryptData(email)]);
   }
   for (const row of await query("SELECT flat, phone, email FROM flats")) {
     const phone = typeof row.phone === "string" ? row.phone : "";
     const email = typeof row.email === "string" ? row.email : "";
-    if (phone && !phone.startsWith("ENC:v1:"))
-      await query("UPDATE flats SET phone=$2 WHERE flat=$1", [
-        row.flat,
-        encryptData(phone),
-      ]);
-    if (email && !email.startsWith("ENC:v1:"))
-      await query("UPDATE flats SET email=$2 WHERE flat=$1", [
-        row.flat,
-        encryptData(email),
-      ]);
+    if (phone && !phone.startsWith("ENC:v1:")) await query("UPDATE flats SET phone=$2 WHERE flat=$1", [row.flat, encryptData(phone)]);
+    if (email && !email.startsWith("ENC:v1:")) await query("UPDATE flats SET email=$2 WHERE flat=$1", [row.flat, encryptData(email)]);
   }
   // Encrypt any existing plaintext backup rows in the application-managed backup table.
   for (const row of await query("SELECT id, data FROM backups")) {
     const value = row.data;
-    if (!(
-      value &&
-      typeof value === "object" &&
-      (value as any).app === "rv-fallon-encrypted-backup" &&
-      (value as any).encrypted === true
-    )) {
-      await query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [
-        row.id,
-        JSON.stringify(protectBackup(value)),
-      ]);
+    if (!(value && typeof value === "object" && (value as any).app === "rv-fallon-encrypted-backup" && (value as any).encrypted === true)) {
+      await query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [row.id, JSON.stringify(protectBackup(value))]);
     }
   }
 

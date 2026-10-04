@@ -28,11 +28,7 @@ import NavIcon from "./components/NavIcon.js";
 import { EXPORTABLE, NAV, ROLE_LABEL } from "../shared/navigation.js";
 import { isAdminRole, isSuperRole } from "../shared/roles.js";
 import { clearSession, readSession, writeSession } from "./session-storage.js";
-import {
-  readBrowserStorage,
-  removeBrowserStorage,
-  writeBrowserStorage,
-} from "./safe-storage.js";
+import { readBrowserStorage, removeBrowserStorage, writeBrowserStorage } from "./safe-storage.js";
 
 // Code-split every page/panel that isn't needed for the very first paint
 // (Dashboard + Login + Months are the common landing views and stay eager).
@@ -152,6 +148,7 @@ export default function App() {
   const [needLogin, setNeedLogin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showNewMonth, setShowNewMonth] = useState(false);
+  const [showDemoNotice, setShowDemoNotice] = useState(false);
   const [section, setSection] = useState(() => {
     const storedAuth = auth;
     if (storedAuth?.user?.role === "developer") return "feature-config";
@@ -388,6 +385,7 @@ export default function App() {
       writeBrowserStorage("rv_section", landingSection);
       setSection(landingSection);
       setShowLogin(false);
+      setShowDemoNotice(true);
       setSidebarOpen(false);
       setMsg("");
     } catch (e) {
@@ -1083,6 +1081,43 @@ export default function App() {
     <div className="app-shell">
       <ToastHost />
       <DialogHost />
+      {showDemoNotice && auth && (
+        <div className="modal-backdrop demo-notice-backdrop" role="presentation">
+          <section
+            className="card modal demo-notice-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="demo-notice-title"
+          >
+            <div className="confirm-dialog-icon" aria-hidden="true">i</div>
+            <h2 id="demo-notice-title">Welcome to the Demo App!</h2>
+            <p>
+              This Apartment Association Portal is intended for demonstration
+              purposes only.
+            </p>
+            <p>
+              All data displayed in this application, including flat details,
+              resident information, maintenance charges, payments, expenses,
+              visitor records, and other transactions, may be sample or dummy
+              data.
+            </p>
+            <p>
+              Please do not rely on this information for actual financial
+              transactions or official apartment association records.
+            </p>
+            <div className="confirm-dialog-actions">
+              <button
+                type="button"
+                className="pri"
+                onClick={() => setShowDemoNotice(false)}
+                autoFocus
+              >
+                Continue to Dashboard
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {showNewMonth && (
         <NewMonthDialog
           months={data.months}
@@ -1302,13 +1337,17 @@ export default function App() {
             <span>
               © {new Date().getFullYear()} {APP_BRAND_NAME}
             </span>
-            {data.settings.contactEmail ? (
-              <a href={`mailto:${data.settings.contactEmail}`}>
-                {data.settings.contactEmail}
-              </a>
-            ) : (
-              <span>Maintenance portal</span>
-            )}
+            <span className="footer-contact">
+              If you have any questions, reach out to us at{" "}
+              <a href="mailto:aisdsdsd@gmail.com">aisdsdsd@gmail.com</a>
+            </span>
+            <button
+              type="button"
+              className="footer-contact-button"
+              onClick={() => void navigate("contact")}
+            >
+              Contact Us
+            </button>
           </div>
         </footer>
       </div>

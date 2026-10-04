@@ -69,12 +69,15 @@ export default function ContactUs({
           <div>
             <h2>CONTACT US</h2>
             <p className="muted">
-              Send a message to the apartment management team.
+              If you have any questions, reach out to us at{" "}
+              <a href="mailto:aisdsdsd@gmail.com">aisdsdsd@gmail.com</a>.
+              You can also send a message using the form below when email
+              submissions are configured.
             </p>
           </div>
-          {contactEmail && (
-            <span className="contact-recipient">{contactEmail}</span>
-          )}
+          <a className="contact-recipient" href="mailto:aisdsdsd@gmail.com">
+            aisdsdsd@gmail.com
+          </a>
         </div>
         {showWhatsApp &&
           (settings.whatsappGroupName || settings.whatsappGroupLink) && (

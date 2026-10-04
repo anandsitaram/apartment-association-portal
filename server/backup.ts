@@ -27,19 +27,10 @@ const ENCRYPTED_FIELDS: Record<string, string[]> = {
   flats: ["phone", "email"],
   contact_submissions: ["name", "email", "subject", "message", "error"],
   security_access_codes: ["visitor_name", "phone", "purpose"],
-  visitor_photo_requests: [
-    "visitor_name",
-    "purpose",
-    "phone",
-    "photo_data",
-    "review_note",
-  ],
+  visitor_photo_requests: ["visitor_name", "purpose", "phone", "photo_data", "review_note"],
   parcel_notices: ["courier", "tracking_number", "notes", "photo_data"],
 };
-const encryptRowsForStorage = (
-  table: string,
-  rows: Record<string, unknown>[],
-) =>
+const encryptRowsForStorage = (table: string, rows: Record<string, unknown>[]) =>
   rows.map((row) => {
     const next = { ...row };
     for (const field of ENCRYPTED_FIELDS[table] || []) {
@@ -60,20 +51,10 @@ export interface EncryptedBackupEnvelope {
 }
 
 export function protectBackup(data: unknown): EncryptedBackupEnvelope {
-  const at =
-    data &&
-    typeof data === "object" &&
-    "at" in data &&
-    typeof (data as any).at === "string"
-      ? String((data as any).at)
-      : new Date().toISOString();
-  if (
-    data &&
-    typeof data === "object" &&
-    (data as any).app === "rv-fallon-encrypted-backup" &&
-    (data as any).encrypted === true &&
-    typeof (data as any).payload === "string"
-  ) {
+  const at = data && typeof data === "object" && "at" in data && typeof (data as any).at === "string"
+    ? String((data as any).at)
+    : new Date().toISOString();
+  if (data && typeof data === "object" && (data as any).app === "rv-fallon-encrypted-backup" && (data as any).encrypted === true && typeof (data as any).payload === "string") {
     return data as EncryptedBackupEnvelope;
   }
   return {
@@ -86,18 +67,11 @@ export function protectBackup(data: unknown): EncryptedBackupEnvelope {
 }
 
 export function unprotectBackup(data: unknown): BackupFile {
-  if (
-    data &&
-    typeof data === "object" &&
-    (data as any).app === "rv-fallon-encrypted-backup" &&
-    (data as any).encrypted === true
-  ) {
+  if (data && typeof data === "object" && (data as any).app === "rv-fallon-encrypted-backup" && (data as any).encrypted === true) {
     const payload = (data as any).payload;
-    if (typeof payload !== "string")
-      throw new Error("Encrypted backup payload is missing");
+    if (typeof payload !== "string") throw new Error("Encrypted backup payload is missing");
     const parsed = JSON.parse(decryptData(payload));
-    if (parsed?.app !== "rv-fallon" || typeof parsed?.tables !== "object")
-      throw new Error("Decrypted backup format is invalid");
+    if (parsed?.app !== "rv-fallon" || typeof parsed?.tables !== "object") throw new Error("Decrypted backup format is invalid");
     return parsed as BackupFile;
   }
   // Backward compatibility: old plaintext backups can still be restored by a Super Admin.

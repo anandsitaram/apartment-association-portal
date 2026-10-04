@@ -157,7 +157,7 @@ export const NAV: NavItem[] = [
     id: "contact",
     label: "Contact Us",
     icon: "contact",
-    roles: ["user", "admin", "super", "superadmin"],
+    roles: ["user", "admin", "super", "superadmin", "security"],
   },
   {
     id: "contact-submissions",

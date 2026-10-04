@@ -95,145 +95,47 @@ describe("auth", () => {
 describe("visitor access security", () => {
   it("restricts code management to the linked owner and rejects expired approval/entry", async () => {
     const createdOwner = await post(
-      {
-        action: "saveUser",
-        username: "visitor-owner",
-        password: "ownerpw1",
-        role: "user",
-        flat: "101-3BHK",
-      },
+      { action: "saveUser", username: "visitor-owner", password: "ownerpw1", role: "user", flat: "101-3BHK" },
       superToken,
     );
     expect(createdOwner.code).toBe(200);
     const createdSecurity = await post(
-      {
-        action: "saveUser",
-        username: "gate-security",
-        password: "securitypw1",
-        role: "security",
-      },
+      { action: "saveUser", username: "gate-security", password: "securitypw1", role: "security" },
       superToken,
     );
     expect(createdSecurity.code).toBe(200);
-    const ownerToken = (
-      await post(
-        { action: "login", username: "visitor-owner", password: "ownerpw1" },
-        null,
-      )
-    ).body.token;
-    const securityToken = (
-      await post(
-        { action: "login", username: "gate-security", password: "securitypw1" },
-        null,
-      )
-    ).body.token;
+    const ownerToken = (await post({ action: "login", username: "visitor-owner", password: "ownerpw1" }, null)).body.token;
+    const securityToken = (await post({ action: "login", username: "gate-security", password: "securitypw1" }, null)).body.token;
 
-    const adminCreate = await post(
-      {
-        action: "createSecurityCode",
-        visitorName: "Admin should not create",
-        flat: "101-3BHK",
-      },
-      token,
-    );
+    const adminCreate = await post({ action: "createSecurityCode", visitorName: "Admin should not create", flat: "101-3BHK" }, token);
     expect(adminCreate.code).toBe(403);
-    expect(
-      (await post({ action: "listMySecurityCodes" }, token)).body.codes,
-    ).toEqual([]);
-    const otherFlatCreate = await post(
-      {
-        action: "createSecurityCode",
-        visitorName: "Wrong flat",
-        flat: "102-2BHK",
-      },
-      ownerToken,
-    );
+    expect((await post({ action: "listMySecurityCodes" }, token)).body.codes).toEqual([]);
+    const otherFlatCreate = await post({ action: "createSecurityCode", visitorName: "Wrong flat", flat: "102-2BHK" }, ownerToken);
     expect(otherFlatCreate.code).toBe(403);
 
     const { sql } = await import("../server/db.js");
-    const first = await post(
-      {
-        action: "createSecurityCode",
-        visitorName: "Expired before approval",
-        flat: "101-3BHK",
-        purpose: "Visit",
-      },
-      ownerToken,
-    );
+    const first = await post({ action: "createSecurityCode", visitorName: "Expired before approval", flat: "101-3BHK", purpose: "Visit" }, ownerToken);
     expect(first.code).toBe(200);
     const firstCode = first.body.code;
-    expect(
-      (await post({ action: "deleteMySecurityCode", id: firstCode.id }, token))
-        .code,
-    ).toBe(403);
-    const firstLookup = await post(
-      { action: "lookupSecurityCode", code: firstCode.code },
-      securityToken,
-    );
+    expect((await post({ action: "deleteMySecurityCode", id: firstCode.id }, token)).code).toBe(403);
+    const firstLookup = await post({ action: "lookupSecurityCode", code: firstCode.code }, securityToken);
     expect(firstLookup.code).toBe(200);
-    const firstRequest = await post(
-      {
-        action: "createVisitorPhotoRequest",
-        accessCodeId: firstCode.id,
-        photoData: "data:image/jpeg;base64,dGVzdA==",
-      },
-      securityToken,
-    );
+    const firstRequest = await post({ action: "createVisitorPhotoRequest", accessCodeId: firstCode.id, photoData: "data:image/jpeg;base64,dGVzdA==" }, securityToken);
     expect(firstRequest.code).toBe(200);
-    expect(
-      (await post({ action: "listVisitorPhotoRequests" }, token)).body.requests,
-    ).toEqual([]);
-    await sql.query(
-      "UPDATE security_access_codes SET expires_at=now() - interval '1 minute' WHERE id=$1",
-      [firstCode.id],
-    );
-    const lateApproval = await post(
-      {
-        action: "reviewVisitorPhotoRequest",
-        id: firstRequest.body.request.id,
-        status: "approved",
-      },
-      ownerToken,
-    );
+    expect((await post({ action: "listVisitorPhotoRequests" }, token)).body.requests).toEqual([]);
+    await sql.query("UPDATE security_access_codes SET expires_at=now() - interval '1 minute' WHERE id=$1", [firstCode.id]);
+    const lateApproval = await post({ action: "reviewVisitorPhotoRequest", id: firstRequest.body.request.id, status: "approved" }, ownerToken);
     expect(lateApproval.code).toBe(409);
 
-    const second = await post(
-      {
-        action: "createSecurityCode",
-        visitorName: "Expired before gate",
-        flat: "101-3BHK",
-        purpose: "Visit",
-      },
-      ownerToken,
-    );
+    const second = await post({ action: "createSecurityCode", visitorName: "Expired before gate", flat: "101-3BHK", purpose: "Visit" }, ownerToken);
     expect(second.code).toBe(200);
     const secondCode = second.body.code;
-    const secondRequest = await post(
-      {
-        action: "createVisitorPhotoRequest",
-        accessCodeId: secondCode.id,
-        photoData: "data:image/jpeg;base64,dGVzdA==",
-      },
-      securityToken,
-    );
+    const secondRequest = await post({ action: "createVisitorPhotoRequest", accessCodeId: secondCode.id, photoData: "data:image/jpeg;base64,dGVzdA==" }, securityToken);
     expect(secondRequest.code).toBe(200);
-    const approval = await post(
-      {
-        action: "reviewVisitorPhotoRequest",
-        id: secondRequest.body.request.id,
-        status: "approved",
-      },
-      ownerToken,
-    );
+    const approval = await post({ action: "reviewVisitorPhotoRequest", id: secondRequest.body.request.id, status: "approved" }, ownerToken);
     expect(approval.code).toBe(200);
-    await sql.query(
-      "UPDATE security_access_codes SET expires_at=now() - interval '1 minute' WHERE id=$1",
-      [secondCode.id],
-    );
-    const lateEntry = await post(
-      { action: "acceptSecurityCode", code: secondCode.code },
-      securityToken,
-    );
+    await sql.query("UPDATE security_access_codes SET expires_at=now() - interval '1 minute' WHERE id=$1", [secondCode.id]);
+    const lateEntry = await post({ action: "acceptSecurityCode", code: secondCode.code }, securityToken);
     expect(lateEntry.code).toBe(400);
   });
 });
