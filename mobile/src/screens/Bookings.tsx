@@ -128,10 +128,20 @@ export default function Bookings({ kind, data, admin, superAdmin, flat, save }: 
                   <SmallButton
                     title="Delete booking"
                     danger
-                    onPress={() => showAppDialog('Delete booking?', `Permanently remove booking #${b.id} for flat ${b.flat || '—'}? This will be recorded in the audit log.`, [
-                      { text: 'Keep booking', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => void save({ action: act.del, id: b.id }, 'Booking deleted') },
-                    ])}
+                    onPress={() =>
+                      showAppDialog(
+                        'Delete booking?',
+                        `Permanently remove booking #${b.id} for flat ${b.flat || '—'}? This will be recorded in the audit log.`,
+                        [
+                          { text: 'Keep booking', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => void save({ action: act.del, id: b.id }, 'Booking deleted'),
+                          },
+                        ],
+                      )
+                    }
                   />
                 )}
               </View>

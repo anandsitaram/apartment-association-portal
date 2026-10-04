@@ -19,7 +19,10 @@ export async function withClient<T>(
   const c = new pg.Client({
     connectionString: cleanUrl(url),
     ssl: useSsl(url)
-      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" }
+      ? {
+          rejectUnauthorized:
+            process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false",
+        }
       : false,
   });
   await c.connect();

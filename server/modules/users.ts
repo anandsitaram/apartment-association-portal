@@ -252,7 +252,11 @@ export const actions: Record<string, Action> = {
   changePassword: {
     role: "user",
     async run(b, ctx) {
-      if (ctx.me.role === "security") fail(403, "Security accounts cannot change passwords. Contact an administrator for assistance.");
+      if (ctx.me.role === "security")
+        fail(
+          403,
+          "Security accounts cannot change passwords. Contact an administrator for assistance.",
+        );
       const current = String(b.currentPassword || "");
       const next = String(b.newPassword || "");
       const [u] = await sql.query("SELECT pass FROM users WHERE username=$1", [

@@ -28,7 +28,11 @@ import NavIcon from "./components/NavIcon.js";
 import { EXPORTABLE, NAV, ROLE_LABEL } from "../shared/navigation.js";
 import { isAdminRole, isSuperRole } from "../shared/roles.js";
 import { clearSession, readSession, writeSession } from "./session-storage.js";
-import { readBrowserStorage, removeBrowserStorage, writeBrowserStorage } from "./safe-storage.js";
+import {
+  readBrowserStorage,
+  removeBrowserStorage,
+  writeBrowserStorage,
+} from "./safe-storage.js";
 
 // Code-split every page/panel that isn't needed for the very first paint
 // (Dashboard + Login + Months are the common landing views and stay eager).

@@ -65,34 +65,49 @@ async function main() {
     );
   }
 
+  // Existing accounts are allowed when the operator intentionally enables demo
+  // seeding. Never overwrite or reset existing passwords. Only create the built-in
+  // demo logins when the users table is empty; this avoids adding test credentials
+  // to a populated deployment by default.
   const existingUsers = await sql.query("SELECT username FROM users");
-  const demoUserIds = new Set<string>(demoAccounts.map((u) => u.username));
-  const unexpectedUsers = existingUsers.filter(
-    (u) => !demoUserIds.has(String(u.username)),
-  );
-  if (unexpectedUsers.length) {
-    throw new Error(
-      "The database contains non-demo user accounts. Use a fresh demo database; no changes were made.",
-    );
-  }
+  const createDemoAccounts = existingUsers.length === 0;
 
   for (const f of flats) {
     await sql.query(
-      `INSERT INTO flats(flat,sl,name,type,bua,uds,block) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(flat) DO NOTHING`,
-      [f.flat, f.sl, f.name, f.type, f.bua, f.uds, f.block || ""],
+      `INSERT INTO flats(flat,sl,name,type,bua,uds)
+   VALUES($1,$2,$3,$4,$5,$6)
+   ON CONFLICT(flat) DO NOTHING`,
+      [f.flat, f.sl, f.name, f.type, f.bua, f.uds],
     );
   }
-  for (const user of demoAccounts) {
-    await sql.query(
-      `INSERT INTO users(username,pass,role,flat,phone,email) VALUES($1,$2,$3,$4,'','') ON CONFLICT(username) DO NOTHING`,
-      [user.username, hash(user.password), user.role, user.flat],
+  if (createDemoAccounts) {
+    for (const user of demoAccounts) {
+      await sql.query(
+        `INSERT INTO users(username,pass,role,flat,phone,email) VALUES($1,$2,$3,$4,'','') ON CONFLICT(username) DO NOTHING`,
+        [user.username, hash(user.password), user.role, user.flat],
+      );
+    }
+    console.log(
+      "Created built-in demo accounts because the users table was empty.",
     );
+  } else {
+    console.log("Preserved existing user accounts; no demo logins were added.");
   }
 
-  // Fictional maintenance-payment records for the two most recent completed months.
+  // Fictional maintenance-payment records for the last three completed calendar months.
   // This seed is for a disposable demo database only; every inserted payment carries
   // an explicit demo reference/note so it is not mistaken for a real transaction.
   const demoMonths = [
+    {
+      month: "2026-07",
+      expenses: [
+        { description: "Security", amount: 50000 },
+        { description: "Housekeeping", amount: 28000 },
+        { description: "Utilities", amount: 23500 },
+        { description: "Garden and common area", amount: 13500 },
+      ],
+      paidDateBase: "2026-07",
+    },
     {
       month: "2026-08",
       expenses: [
@@ -126,7 +141,10 @@ async function main() {
           demoMonth.month,
           JSON.stringify(demoMonth.expenses),
           flats.length,
-          JSON.stringify({ demoData: true, warning: "Fictional demo data; not real financial records" }),
+          JSON.stringify({
+            demoData: true,
+            warning: "Fictional demo data; not real financial records",
+          }),
         ],
       );
     }
@@ -136,7 +154,8 @@ async function main() {
       // Keep a repeatable mix of paid, partial, and unpaid sample records.
       // 0, 1, and 4 in each five-flat group are paid; 2 is partial; 3 is unpaid.
       const paymentPattern = i % 5;
-      const isPaid = paymentPattern === 0 || paymentPattern === 1 || paymentPattern === 4;
+      const isPaid =
+        paymentPattern === 0 || paymentPattern === 1 || paymentPattern === 4;
       const isPartial = paymentPattern === 2;
       const monthlyMaintenance = f.type === "3BHK" ? 4200 : 3200;
       const monthlyCorp = Math.round(f.bua * 0.5);
@@ -150,7 +169,9 @@ async function main() {
         : isPartial
           ? Math.round(monthlyCorp * 0.5)
           : 0;
-      const day = String(3 + ((i * 3 + (demoMonth.month === "2026-08" ? 1 : 2)) % 25)).padStart(2, "0");
+      const day = String(
+        3 + ((i * 3 + (demoMonth.month === "2026-08" ? 1 : 2)) % 25),
+      ).padStart(2, "0");
       const paidDate = maint || corp ? `${demoMonth.paidDateBase}-${day}` : "";
       const mode = !(maint || corp)
         ? ""
@@ -164,7 +185,15 @@ async function main() {
       };
       await sql.query(
         `INSERT INTO payments(month,flat,maint,corp,mode,paid_date,extra) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb) ON CONFLICT(month,flat) DO NOTHING`,
-        [demoMonth.month, f.flat, maint, corp, mode, paidDate, JSON.stringify(extra)],
+        [
+          demoMonth.month,
+          f.flat,
+          maint,
+          corp,
+          mode,
+          paidDate,
+          JSON.stringify(extra),
+        ],
       );
     }
   }
@@ -177,11 +206,13 @@ async function main() {
   console.log(
     "Super Admin: username super-admin, password = your ADMIN_PASSWORD environment variable",
   );
-  for (const user of demoAccounts)
-    console.log(`  ${user.username} / ${user.password} (${user.role})`);
-  console.log(
-    "These are fictional demo accounts. Do not deploy with these credentials enabled.",
-  );
+  if (createDemoAccounts) {
+    for (const user of demoAccounts)
+      console.log(`  ${user.username} / ${user.password} (${user.role})`);
+    console.log(
+      "These are fictional demo accounts. Do not deploy with these credentials enabled.",
+    );
+  }
 }
 
 main().catch((error) => {

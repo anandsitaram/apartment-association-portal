@@ -10,8 +10,8 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 :root {
-  --pri: #2E7D32;
-  --pri2: #388E3C;
+  --pri: #2e7d32;
+  --pri2: #388e3c;
   --bg: #f8fafc;
   --card: #fff;
   --ink: #0f172a;
@@ -28,7 +28,12 @@ body {
   margin: 0 0 64px;
   /* Keep typography self-contained: no third-party font requests that conflict
      with the production Content Security Policy. */
-  font: 14px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font:
+    14px/1.45 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   background: var(--bg);
   color: var(--ink);
 }
@@ -134,7 +139,7 @@ button {
 }
 input:focus,
 select:focus {
-  outline: 2px solid #86EFAC;
+  outline: 2px solid #86efac;
   border-color: var(--pri2);
 }
 /* Checkboxes and radios are native controls, not text boxes: the generic input padding/border/
@@ -166,7 +171,7 @@ input[type="radio"]:disabled {
 }
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
-  outline: 2px solid #86EFAC;
+  outline: 2px solid #86efac;
   outline-offset: 2px;
 }
 /* Any label/span that pairs one of these with text should keep them on one baseline, however the
@@ -262,7 +267,7 @@ table {
   white-space: nowrap;
 }
 th {
-  background: linear-gradient(var(--pri), #2E7D32);
+  background: linear-gradient(var(--pri), #2e7d32);
   color: #fff;
   font-weight: 600;
   white-space: normal;
@@ -279,7 +284,7 @@ tbody tr:nth-child(even) {
   background: #f8fafc;
 }
 tbody tr:hover {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 td input,
 td select {
@@ -294,7 +299,7 @@ td select {
 }
 tfoot td {
   font-weight: 700;
-  background: #DCFCE7;
+  background: #dcfce7;
   border-bottom: 0;
 }
 .neg {
@@ -525,12 +530,12 @@ code {
    Application shell / dashboard refresh
    -------------------------------------------------------------------------- */
 :root {
-  --shell-bg: #F5FAF5;
+  --shell-bg: #f5faf5;
   --panel: #ffffff;
   --sidebar: #ffffff;
-  --blue: #2E7D32;
-  --blue-dark: #1B5E20;
-  --blue-soft: #E8F5E9;
+  --blue: #2e7d32;
+  --blue-dark: #1b5e20;
+  --blue-soft: #e8f5e9;
   --text: #172033;
   --muted: #667085;
   --border: #e5e9f2;
@@ -589,7 +594,7 @@ select {
   display: grid;
   place-items: center;
   border-radius: 7px;
-  background: #E8F5E9;
+  background: #e8f5e9;
   color: var(--blue);
   font-size: 20px;
   font-weight: 800;
@@ -628,8 +633,8 @@ select {
 .role-card strong,
 .top-role,
 .role-pill {
-  color: #2E7D32;
-  background: #E8F5E9;
+  color: #2e7d32;
+  background: #e8f5e9;
   border-radius: 7px;
   padding: 6px 10px;
   font-weight: 700;
@@ -662,14 +667,14 @@ select {
 
 .side-nav button:hover,
 .logout-nav:hover {
-  background: #F5FAF5;
+  background: #f5faf5;
   filter: none;
   transform: none;
 }
 
 .side-nav button.active {
-  background: #E8F5E9;
-  color: #2E7D32;
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
 .nav-icon {
@@ -763,7 +768,7 @@ select {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #388E3C;
+  background: #388e3c;
   color: white;
   font-weight: 700;
   margin-left: 7px;
@@ -931,7 +936,7 @@ select {
 
 .report-table th {
   height: 47px;
-  background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 100%);
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
   color: #fff;
   border-bottom: 0;
   font-size: 13px;
@@ -950,7 +955,7 @@ select {
 }
 
 .report-table tbody tr:hover {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 
 .report-table tbody td {
@@ -1195,11 +1200,11 @@ table td.r {
   border: 1px solid #d8e0ee;
   border-radius: 8px;
   background: #fff;
-  color: #2E7D32;
+  color: #2e7d32;
   font-weight: 700;
 }
 .top-login:hover {
-  background: #F5FAF5;
+  background: #f5faf5;
   transform: none;
   filter: none;
 }
@@ -1219,7 +1224,7 @@ table td.r {
 }
 .dashboard-card-head .eyebrow {
   margin-bottom: 5px;
-  color: #388E3C;
+  color: #388e3c;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.9px;
@@ -1243,7 +1248,7 @@ table td.r {
   background: #fff;
 }
 .dashboard-date .calendar-icon {
-  color: #2E7D32;
+  color: #2e7d32;
 }
 
 .report-table-wrap {
@@ -1283,7 +1288,7 @@ table td.r {
   background: #f8fafc;
 }
 .report-table tbody tr:hover {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 .report-table tbody td {
   color: #273247;
@@ -1332,10 +1337,10 @@ table td.r {
 
 /* ==========================================================================\n   Green UI / responsive shell v3\n   ========================================================================== */
 :root {
-  --brand-green: #2E7D32;
-  --brand-green-dark: #1B5E20;
-  --brand-green-soft: #E8F5E9;
-  --brand-green-line: #C8E6C9;
+  --brand-green: #2e7d32;
+  --brand-green-dark: #1b5e20;
+  --brand-green-soft: #e8f5e9;
+  --brand-green-line: #c8e6c9;
   --rv-bg: #f5f6fa;
   --rv-text: #161b2d;
   --rv-muted: #697386;
@@ -1358,7 +1363,7 @@ body {
   width: 244px;
   flex-basis: 244px;
   padding: 22px 14px 18px;
-  background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 100%);
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
   border-right: 0;
   color: #fff;
   box-shadow: 8px 0 28px rgba(53, 34, 110, 0.1);
@@ -1489,7 +1494,7 @@ body {
 }
 .top-login {
   color: var(--brand-green);
-  border-color: #C8E6C9;
+  border-color: #c8e6c9;
   background: #fff;
 }
 .top-login:hover {
@@ -1570,7 +1575,7 @@ button.pri:hover {
 }
 .report-table th {
   height: 49px;
-  background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 100%);
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
   font-size: 12.5px;
 }
 .report-table th.text,
@@ -1585,10 +1590,10 @@ button.pri:hover {
   background: #fafbfc;
 }
 .report-table tbody tr:hover {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 .report-table tfoot td {
-  background: #F5FAF5;
+  background: #f5faf5;
 }
 
 /* Keep every numeric table column aligned regardless of content width. */
@@ -1626,7 +1631,7 @@ table td:not(.r):first-child {
 
 /* Login */
 body:has(.login-page) {
-  background: #F5FAF5;
+  background: #f5faf5;
 }
 .login-page {
   min-height: 100vh;
@@ -1635,15 +1640,15 @@ body:has(.login-page) {
   padding: 24px;
   background: radial-gradient(
     circle at 50% 0%,
-    #E8F5E9 0,
+    #e8f5e9 0,
     #f7f7fb 48%,
-    #F5FAF5 100%
+    #f5faf5 100%
   );
 }
 .login-card {
   width: min(410px, 100%);
   padding: 36px;
-  border: 1px solid #C8E6C9;
+  border: 1px solid #c8e6c9;
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 18px 55px rgba(53, 35, 110, 0.13);
@@ -1909,7 +1914,7 @@ body:has(.login-page) {
   background: linear-gradient(135deg, #12a36b, #0b7d55);
 }
 .kpi-green {
-  background: linear-gradient(135deg, #43A047, #1B5E20);
+  background: linear-gradient(135deg, #43a047, #1b5e20);
 }
 .kpi-amber {
   background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -2021,7 +2026,7 @@ body:has(.login-page) {
   width: 110px;
   height: 8px;
   border-radius: 99px;
-  background: #E8F5E9;
+  background: #e8f5e9;
   overflow: hidden;
 }
 .mbar i {
@@ -2048,8 +2053,8 @@ body:has(.login-page) {
   border-radius: 99px;
   padding: 7px 16px;
   background: #fff;
-  border: 1px solid #C8E6C9;
-  color: #2F5133;
+  border: 1px solid #c8e6c9;
+  color: #2f5133;
   font-weight: 600;
   font-size: 13.5px;
 }
@@ -2163,9 +2168,9 @@ tr.flat-excluded {
 .login-page {
   background: radial-gradient(
     circle at 20% 0%,
-    #E8F5E9 0,
+    #e8f5e9 0,
     #f7f7fb 50%,
-    #F5FAF5 100%
+    #f5faf5 100%
   );
 }
 .login-shell {
@@ -2178,7 +2183,7 @@ tr.flat-excluded {
   box-shadow: 0 24px 70px rgba(53, 35, 110, 0.18);
 }
 .login-hero {
-  background: linear-gradient(160deg, #43A047 0%, #1B5E20 60%, #14532D 100%);
+  background: linear-gradient(160deg, #43a047 0%, #1b5e20 60%, #14532d 100%);
   color: #fff;
   padding: 44px 38px;
   display: flex;
@@ -2252,11 +2257,11 @@ tr.flat-excluded {
 .login-shell .login-card input {
   width: 100%;
   box-sizing: border-box;
-  background: #F5FAF5;
-  border-color: #C8E6C9;
+  background: #f5faf5;
+  border-color: #c8e6c9;
 }
 .login-shell .login-card input:focus {
-  outline: 2px solid #86EFAC;
+  outline: 2px solid #86efac;
   border-color: var(--brand-green);
   background: #fff;
 }
@@ -3346,7 +3351,7 @@ input.calc-value {
 }
 .calendar-nav:hover,
 .calendar-today:hover {
-  background: #F5FAF5;
+  background: #f5faf5;
   border-color: #cfc8e8;
 }
 .gym-calendar-month {
@@ -3562,7 +3567,7 @@ input.calc-value {
   justify-content: space-between;
   gap: 20px;
   padding: 12px 14px;
-  border: 1px solid #C8E6C9;
+  border: 1px solid #c8e6c9;
   border-radius: 10px;
   background: #fff;
 }
@@ -4268,7 +4273,7 @@ html.dark .table-skeleton-bar {
 }
 .dialog-input:focus-visible {
   outline: 3px solid rgba(99, 102, 241, 0.22);
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 .confirm-dialog-icon.danger {
   background: #fef2f2;
@@ -4404,7 +4409,7 @@ html.dark .table-skeleton-bar {
   line-height: 1.25;
 }
 .settings-tab.active {
-  background: #E8F5E9;
+  background: #e8f5e9;
   border-color: #d9ccff;
   color: #4f2abf;
 }
@@ -4447,7 +4452,7 @@ html.dark .table-skeleton-bar {
   padding: 7px 10px;
   border-radius: 999px;
   background: #f5f3ff;
-  color: #2E7D32;
+  color: #2e7d32;
   font-size: 12px;
   font-weight: 600;
 }
@@ -4673,7 +4678,7 @@ html.dark .table-skeleton-bar {
   padding: 7px 10px;
   border-radius: 999px;
   background: #f5f3ff;
-  color: #2E7D32;
+  color: #2e7d32;
   font-size: 12px;
   font-weight: 600;
   word-break: break-all;
@@ -5101,7 +5106,7 @@ html.dark .table-skeleton-bar {
   isolation: isolate;
   min-height: 520px;
   overflow: hidden;
-  background: #1B5E20;
+  background: #1b5e20;
 }
 .login-hero-image {
   position: absolute;
@@ -5120,7 +5125,7 @@ html.dark .table-skeleton-bar {
   background:
     linear-gradient(
       180deg,
-      rgba(14, 55, 19, 0.10) 0%,
+      rgba(14, 55, 19, 0.1) 0%,
       rgba(17, 75, 24, 0.76) 72%,
       rgba(12, 56, 18, 0.94) 100%
     ),
@@ -5197,7 +5202,7 @@ html.dark .table-skeleton-bar {
   background: #f8fafc;
 }
 .month-scroll table tbody tr:hover td:first-child {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 .month-scroll table tbody tr.unpaid td:first-child {
   background: color-mix(in srgb, var(--bad) 7%, var(--card));
@@ -5301,7 +5306,7 @@ th {
   background: #f8fafc;
 }
 .dash .report-table tbody tr:hover td:first-child {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 .dash .report-table tfoot td {
   position: sticky;
@@ -5576,7 +5581,7 @@ body:has(.app-shell) {
   white-space: nowrap;
 }
 .row-mini:hover:not(:disabled) {
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 @media print {
   .row-mini {
@@ -5769,7 +5774,7 @@ body:has(.app-shell) {
 .hb-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #2E7D32, #66BB6A);
+  background: linear-gradient(90deg, #2e7d32, #66bb6a);
   border-radius: 99px;
 }
 .hb-val small {
@@ -5838,7 +5843,7 @@ html.dark .brand-mark {
   place-items: center;
   margin-bottom: 8px;
   border-radius: 14px;
-  background: var(--pri, #2E7D32);
+  background: var(--pri, #2e7d32);
   color: #fff;
   font-size: 18px;
   font-weight: 800;
@@ -6078,7 +6083,7 @@ html.dark .brand-mark {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--pri2, #2E7D32);
+  color: var(--pri2, #2e7d32);
   font: inherit;
   font-weight: 600;
   text-decoration: underline;
@@ -6208,7 +6213,7 @@ html.dark .brand-mark {
   padding: 12px 14px;
   border: 1px solid #c7d2fe;
   border-radius: 10px;
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 .billing-edit-banner > div {
   min-width: 220px;
@@ -6297,7 +6302,7 @@ html.dark .brand-mark {
   background-color: #f8fafc;
 }
 .month-payments-table tbody tr:hover td {
-  background-color: #E8F5E9;
+  background-color: #e8f5e9;
 }
 .month-payments-table tbody tr.unpaid td {
   background-color: #fff5f5;
@@ -6351,14 +6356,14 @@ html.dark .brand-mark {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  background: #E8F5E9;
+  background: #e8f5e9;
   border-top: 2px solid #c7d2fe;
   border-bottom: 0;
   font-weight: 700;
 }
 .month-payments-table tfoot td:first-child {
   z-index: 4;
-  background: #E8F5E9;
+  background: #e8f5e9;
 }
 @media (max-width: 860px) {
   .month-table-toolbar-actions {
@@ -6616,7 +6621,7 @@ html.dark .brand-mark {
   margin-left: 8px;
   padding: 3px 7px;
   border-radius: 999px;
-  color: #1B5E20;
+  color: #1b5e20;
   background: #f0eaff;
   border: 1px solid #ded2ff;
   font-size: 10px;
@@ -6709,7 +6714,7 @@ html.dark .brand-mark {
 }
 .month-financial-summary thead th {
   background: #f0edfb;
-  color: #2E7D32;
+  color: #2e7d32;
   border-bottom: 1px solid #ded7f5;
   font-size: 12px;
 }
@@ -6774,7 +6779,7 @@ html.dark .brand-mark {
 .summary-total-percent {
   display: block;
   margin-top: 4px;
-  color: #5F6F60;
+  color: #5f6f60;
   font-size: 10px;
   font-weight: 650;
 }
@@ -6788,7 +6793,7 @@ html.dark .brand-mark {
 .summary-total-percent {
   display: block;
   margin-top: 4px;
-  color: #5F6F60;
+  color: #5f6f60;
   font-size: 10px;
   font-weight: 650;
 }
@@ -7169,8 +7174,8 @@ textarea {
     text-overflow: ellipsis;
   }
   .mobile-bottom-nav button.active {
-    color: var(--pri, #2E7D32);
-    background: color-mix(in srgb, var(--pri, #2E7D32) 9%, transparent);
+    color: var(--pri, #2e7d32);
+    background: color-mix(in srgb, var(--pri, #2e7d32) 9%, transparent);
   }
   .mobile-bottom-nav-icon {
     display: grid;
@@ -7213,9 +7218,31 @@ textarea {
   }
 }
 
-
 /* Visitor photo approval cards */
-.visitor-photo-requests { display: grid; gap: 16px; }
-.visitor-photo-request { border: 1px solid var(--border, #e5e7eb); border-radius: 12px; padding: 14px; min-width: 0; }
-.visitor-photo-request img { display: block; width: 100%; max-width: 520px; max-height: 440px; object-fit: contain; border-radius: 8px; background: #f3f4f6; margin: 10px 0; }
-.visitor-photo-request .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.visitor-photo-requests {
+  display: grid;
+  gap: 16px;
+}
+.visitor-photo-request {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0;
+}
+.visitor-photo-request img {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  max-height: 440px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f3f4f6;
+  margin: 10px 0;
+}
+.visitor-photo-request .row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
