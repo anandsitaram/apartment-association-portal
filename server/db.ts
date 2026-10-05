@@ -179,6 +179,12 @@ export async function ensureSchema(
     `ALTER TABLE months ADD COLUMN IF NOT EXISTS corp_value double precision`,
   );
   await q(
+    `ALTER TABLE months ADD COLUMN IF NOT EXISTS corp_2bhk double precision`,
+  );
+  await q(
+    `ALTER TABLE months ADD COLUMN IF NOT EXISTS corp_3bhk double precision`,
+  );
+  await q(
     `ALTER TABLE months ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT false`,
   );
   await q(

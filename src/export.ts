@@ -122,7 +122,18 @@ export async function buildBook(
   flats.forEach((f, k) => {
     const r = 20 + k,
       p: Partial<Payment> = pays[f.flat] || {},
-      mp = maintOf(m, f),
+      mp =
+        m.notes?.mergeMaintenanceCorp === true
+          ? maintOf(
+              {
+                ...m,
+                notes: { ...(m.notes || {}), mergeMaintenanceCorp: false },
+              },
+              f,
+              flats,
+              settings?.isBlocks === true,
+            )
+          : maintOf(m, f, flats, settings?.isBlocks === true),
       cd =
         m.notes?.mergeMaintenanceCorp === true
           ? corpChargeOf(f, m)
@@ -140,8 +151,8 @@ export async function buildBook(
     ws.getCell(`G${r}`).value = mp;
     ws.getCell(`H${r}`).value = cd;
     ws.getCell(`${totalExpLetter}${r}`).value = {
-      formula: m.notes?.mergeMaintenanceCorp === true ? `G${r}` : `G${r}+H${r}`,
-      result: r2(m.notes?.mergeMaintenanceCorp === true ? mp : mp + cd),
+      formula: `G${r}+H${r}`,
+      result: r2(mp + cd),
     };
     ws.getCell(`${totalPaidLetter}${r}`).value = {
       formula: `N(I${r})+N(J${r})`,

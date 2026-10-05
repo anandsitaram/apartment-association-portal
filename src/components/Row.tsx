@@ -53,6 +53,7 @@ export default function Row({
   onDraftChange,
   paymentPart = "maintenance",
   merged = false,
+  combinedDue,
   bulkApply,
   excluded = false,
   split = "maint_first",
@@ -78,6 +79,8 @@ export default function Row({
   ) => void;
   paymentPart?: "maintenance" | "corp";
   merged?: boolean;
+  /** In merged mode, payment is stored as one amount but the table may still display separate Maintenance and Corp Fund dues. */
+  combinedDue?: number;
   bulkApply?: Bulk;
   excluded?: boolean;
   split?: SplitMode;
@@ -120,7 +123,7 @@ export default function Row({
       setV({ ...v, maint: String(a.maint), corp: String(a.corp) });
     }
   };
-  const due = merged ? mp : mp + cd,
+  const due = merged ? (combinedDue ?? mp) : mp + cd,
     paid = merged ? p.maint || 0 : (p.maint || 0) + (p.corp || 0),
     mdiff = (p.maint || 0) - mp,
     cdiff = (p.corp || 0) - cd,

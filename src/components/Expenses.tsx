@@ -54,6 +54,8 @@ export default function Expenses({
   const [corpRate, setCorpRate] = useState(
     String(m.corp_value ?? m.corp_rate ?? 0.5),
   );
+  const [corp2Bhk, setCorp2Bhk] = useState(String(m.corp_2bhk ?? ""));
+  const [corp3Bhk, setCorp3Bhk] = useState(String(m.corp_3bhk ?? ""));
   const [corpRounding, setCorpRounding] = useState<
     NonNullable<Month["corp_rounding"]>
   >(m.corp_rounding || "nearest");
@@ -77,6 +79,8 @@ export default function Expenses({
     setMergeMaintenanceCorp(m.notes?.mergeMaintenanceCorp === true);
     setCorpMethod(m.corp_method || "sqft");
     setCorpRate(String(m.corp_value ?? m.corp_rate ?? 0.5));
+    setCorp2Bhk(String(m.corp_2bhk ?? ""));
+    setCorp3Bhk(String(m.corp_3bhk ?? ""));
     setCorpRounding(m.corp_rounding || "nearest");
     setEditingCalculation(false);
   }, [m.month, JSON.stringify(m.expenses)]);
@@ -179,6 +183,8 @@ export default function Expenses({
         corpMethod,
         corpRate: Math.max(0, +corpRate || 0),
         corpValue: Math.max(0, +corpRate || 0),
+        corp2Bhk: corp2Bhk.trim() === "" ? null : Math.max(0, +corp2Bhk || 0),
+        corp3Bhk: corp3Bhk.trim() === "" ? null : Math.max(0, +corp3Bhk || 0),
         corpRounding,
         notes: {
           ...(m.notes || {}),
@@ -225,6 +231,18 @@ export default function Expenses({
           stage === "actual"
             ? (m.corp_value ?? m.corp_rate ?? +corpRate)
             : Math.max(0, +corpRate || 0),
+        corp2Bhk:
+          stage === "actual"
+            ? (m.corp_2bhk ?? null)
+            : corp2Bhk.trim() === ""
+              ? null
+              : Math.max(0, +corp2Bhk || 0),
+        corp3Bhk:
+          stage === "actual"
+            ? (m.corp_3bhk ?? null)
+            : corp3Bhk.trim() === ""
+              ? null
+              : Math.max(0, +corp3Bhk || 0),
         corpRounding:
           stage === "actual" ? m.corp_rounding || corpRounding : corpRounding,
         notes: {
@@ -267,6 +285,8 @@ export default function Expenses({
         corpMethod,
         corpRate: Math.max(0, +corpRate || 0),
         corpValue: Math.max(0, +corpRate || 0),
+        corp2Bhk: corp2Bhk.trim() === "" ? null : Math.max(0, +corp2Bhk || 0),
+        corp3Bhk: corp3Bhk.trim() === "" ? null : Math.max(0, +corp3Bhk || 0),
         corpRounding,
         notes: {
           ...(m.notes || {}),
@@ -290,6 +310,8 @@ export default function Expenses({
     setCorpApplicable(m.corp_applicable === true);
     setCorpMethod(m.corp_method || "sqft");
     setCorpRate(String(m.corp_value ?? m.corp_rate ?? 0.5));
+    setCorp2Bhk(String(m.corp_2bhk ?? ""));
+    setCorp3Bhk(String(m.corp_3bhk ?? ""));
     setCorpRounding(m.corp_rounding || "nearest");
     setEditingCalculation(false);
   };
@@ -311,6 +333,8 @@ export default function Expenses({
         corpMethod,
         corpRate: Math.max(0, +corpRate || 0),
         corpValue: Math.max(0, +corpRate || 0),
+        corp2Bhk: corp2Bhk.trim() === "" ? null : Math.max(0, +corp2Bhk || 0),
+        corp3Bhk: corp3Bhk.trim() === "" ? null : Math.max(0, +corp3Bhk || 0),
         corpRounding,
         // Explicit recalculation must use the current expenses, not a stale
         // calculated_expense_total (which may be 0 on older months).
@@ -471,6 +495,33 @@ export default function Expenses({
                   onChange={(e) => setCorpRate(e.target.value)}
                 />
               </label>
+              <div className="corp-bhk-grid">
+                <label className="corp-bhk-field">
+                  <span>Corp Fund — 2 BHK (₹ per flat)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={corp2Bhk}
+                    onChange={(e) => setCorp2Bhk(e.target.value)}
+                    placeholder={corpRate || "Same as default"}
+                  />
+                </label>
+                <label className="corp-bhk-field">
+                  <span>Corp Fund — 3 BHK (₹ per flat)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={corp3Bhk}
+                    onChange={(e) => setCorp3Bhk(e.target.value)}
+                    placeholder={corpRate || "Same as default"}
+                  />
+                </label>
+              </div>
+              <small className="muted corp-bhk-help">
+                Leave blank to use the default Corp Fund rate.
+              </small>
             </>
           )}
           <label className="opt">
@@ -482,17 +533,17 @@ export default function Expenses({
               }
             >
               <option value="no">
-                No — show separate Maintenance and Corp Fund tables
+                No — Show Maintenance and Corp Fund separately
               </option>
               <option value="yes">
-                Yes — show one combined charge and payment entry under
-                Maintenance
+                Yes — Combine Maintenance and Corp Fund into one charge
               </option>
             </select>
-            <small className="muted">
-              When enabled, the Maintenance rounding rule applies to the
-              combined current-month charge.
-            </small>
+            {mergeMaintenanceCorp && (
+              <small className="muted">
+                Rounding is applied to the combined monthly charge.
+              </small>
+            )}
           </label>
           <label className="opt">
             <span>

@@ -52,13 +52,25 @@ export const isCorpExcluded = (
 // Corp Fund supports either a per-sq-ft rate or a fixed amount per flat.
 // Keep the current month's charge separate from carry-forward amounts so a merged
 // rounding adjustment never changes the internally accounted Corp Fund charge.
-export const corpChargeOf = (f: FlatCalc, m: MonthCalc | null | undefined) =>
-  m?.corp_applicable === false || isCorpExcluded(m, f)
-    ? 0
-    : rnd(
-        corpMethodOf(m) === "common" ? corpValueOf(m) : rate(m) * f.bua,
-        m?.corp_rounding || "nearest",
-      );
+export const corpChargeOf = (f: FlatCalc, m: MonthCalc | null | undefined) => {
+  if (m?.corp_applicable === false || isCorpExcluded(m, f)) return 0;
+  const type = String((f as any)?.type || "")
+    .trim()
+    .toUpperCase();
+  const typeSpecific =
+    type.includes("2") && type.includes("BHK")
+      ? m.corp_2bhk
+      : type.includes("3") && type.includes("BHK")
+        ? m.corp_3bhk
+        : null;
+  const raw =
+    typeSpecific != null
+      ? Number(typeSpecific) || 0
+      : corpMethodOf(m) === "common"
+        ? corpValueOf(m)
+        : rate(m) * f.bua;
+  return rnd(raw, m?.corp_rounding || "nearest");
+};
 export const corpOf = (f: FlatCalc, m: MonthCalc | null | undefined) => {
   // In merged mode Corp Fund is included in the combined Maintenance charge and
   // must not appear as a separate due, payment, export, or UI amount.
@@ -515,6 +527,8 @@ export const newMonthBody = (
           corpMethod: source.corp_method || "sqft",
           corpApplicable: source.corp_applicable === true,
           corpValue: source.corp_value ?? source.corp_rate ?? 0.5,
+          corp2Bhk: source.corp_2bhk ?? null,
+          corp3Bhk: source.corp_3bhk ?? null,
           corpRounding: source.corp_rounding || "nearest",
         }
       : {
@@ -525,6 +539,8 @@ export const newMonthBody = (
           corpMethod: "sqft" as const,
           corpApplicable: false,
           corpValue: 0.5,
+          corp2Bhk: null,
+          corp3Bhk: null,
           corpRounding: "nearest" as Rounding,
         };
   const fromSource = !!source && o.flats === "source";
@@ -538,6 +554,8 @@ export const newMonthBody = (
     corp_rounding: calc.corpRounding,
     corp_method: calc.corpMethod,
     corp_value: calc.corpValue,
+    corp2Bhk: "corp2Bhk" in calc ? calc.corp2Bhk : null,
+    corp3Bhk: "corp3Bhk" in calc ? calc.corp3Bhk : null,
     notes: {
       expensesStage: "expected",
       mergeMaintenanceCorp:

@@ -66,7 +66,9 @@ export async function buildBook(
     vertical: 'top',
   };
   ws.getRow(15).height = m.notes?.expenses ? 30 : 20;
-  const cr = +(m.corp_rate ?? 0.5); // Corp Fund rate for this month
+  const cr = +(m.corp_rate ?? 0.5); // Legacy/default Corp Fund rate for this month
+  const cr2 = m.corp_2bhk ?? null;
+  const cr3 = m.corp_3bhk ?? null;
   // Keep the selected maintenance calculation visible in the exported workbook
   // as well as in the formulas below. These rows are blank in the source template.
   const methodText = m.method === 'sqft' ? 'Amount per sq ft' : m.method === 'common' ? 'Common amount' : 'Divide total expenses';
@@ -76,8 +78,10 @@ export async function buildBook(
   ws.getCell('E16').value = val(m);
   ws.getCell('F16').value = 'Rounding';
   ws.getCell('G16').value = m.rounding || 'none';
-  ws.getCell('H16').value = 'Corp Rate / Sq Ft';
-  ws.getCell('I16').value = cr;
+  ws.getCell('H16').value = 'Corp Fund 2 BHK';
+  ws.getCell('I16').value = cr2 ?? cr;
+  ws.getCell('J16').value = 'Corp Fund 3 BHK';
+  ws.getCell('K16').value = cr3 ?? cr;
   // Keep row 17 blank; detailed expense-calculation helper values are not part of the resident-facing export.
   ws.getCell('B17').value = null;
   ws.getCell('C17').value = null;
@@ -93,7 +97,10 @@ export async function buildBook(
   flats.forEach((f, k) => {
     const r = 20 + k,
       p: Partial<Payment> = pays[f.flat] || {},
-      mp = maintOf(m, f),
+      mp =
+        m.notes?.mergeMaintenanceCorp === true
+          ? maintOf({ ...m, notes: { ...(m.notes || {}), mergeMaintenanceCorp: false } }, f)
+          : maintOf(m, f),
       cd = corpOf(f, m),
       mDiff = r2((p.maint || 0) - mp),
       cDiff = r2((p.corp || 0) - cd);
@@ -477,8 +484,10 @@ export async function buildBook(
   ws.spliceColumns(finalExpectedCol, 4); // E-mail + three selection columns
 
   // The Corp rate belongs in the compact calculation settings row above the payment table.
-  ws.getCell('H16').value = 'Corp Rate / Sq Ft';
-  ws.getCell('I16').value = cr;
+  ws.getCell('H16').value = 'Corp Fund 2 BHK';
+  ws.getCell('I16').value = cr2 ?? cr;
+  ws.getCell('J16').value = 'Corp Fund 3 BHK';
+  ws.getCell('K16').value = cr3 ?? cr;
   ws.getCell('I16').style = corpRateStyle;
   ws.getCell('I16').numFmt = '0.##';
 

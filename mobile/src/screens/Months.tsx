@@ -46,6 +46,9 @@ export default function Months({
   const [mergeMaintenanceCorp, setMergeMaintenanceCorp] = useState(month?.notes?.mergeMaintenanceCorp === true);
   const [corpMethod, setCorpMethod] = useState<'sqft' | 'common'>(month?.corp_method || 'sqft');
   const [corpRate, setCorpRate] = useState(String(month?.corp_value ?? month?.corp_rate ?? 0.5));
+  const [corp2Bhk, setCorp2Bhk] = useState(String(month?.corp_2bhk ?? ''));
+  const [corp3Bhk, setCorp3Bhk] = useState(String(month?.corp_3bhk ?? ''));
+  const [selectedBlock, setSelectedBlock] = useState('all');
   const [corpRounding, setCorpRounding] = useState<NonNullable<Month['corp_rounding']>>(month?.corp_rounding || 'nearest');
   const [reminding, setReminding] = useState(false);
   const [expandedCarry, setExpandedCarry] = useState(false);
@@ -71,6 +74,9 @@ export default function Months({
     setMergeMaintenanceCorp(month?.notes?.mergeMaintenanceCorp === true);
     setCorpMethod(month?.corp_method || 'sqft');
     setCorpRate(String(month?.corp_value ?? month?.corp_rate ?? 0.5));
+    setCorp2Bhk(String(month?.corp_2bhk ?? ''));
+    setCorp3Bhk(String(month?.corp_3bhk ?? ''));
+    setSelectedBlock('all');
     setCorpRounding(month?.corp_rounding || 'nearest');
   }, [month?.month, month?.expenses, data.flats.length]);
 
@@ -90,6 +96,8 @@ export default function Months({
         corpMethod,
         corpRate: corp,
         corpValue: corp,
+        corp2Bhk: corp2Bhk.trim() === '' ? null : Math.max(0, Number(corp2Bhk) || 0),
+        corp3Bhk: corp3Bhk.trim() === '' ? null : Math.max(0, Number(corp3Bhk) || 0),
         corpRounding,
         calculatedExpenseTotal: total(month),
         notes: { ...(month.notes || {}), expensesStage: 'actual', mergeMaintenanceCorp },
@@ -127,6 +135,8 @@ export default function Months({
           corpMethod: expectedStage ? corpMethod : month.corp_method || 'sqft',
           corpRate: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
           corpValue: expectedStage ? Math.max(0, Number(corpRate) || 0) : (month.corp_value ?? month.corp_rate ?? 0.5),
+          corp2Bhk: expectedStage ? (corp2Bhk.trim() === '' ? null : Math.max(0, Number(corp2Bhk) || 0)) : (month.corp_2bhk ?? null),
+          corp3Bhk: expectedStage ? (corp3Bhk.trim() === '' ? null : Math.max(0, Number(corp3Bhk) || 0)) : (month.corp_3bhk ?? null),
           corpRounding: expectedStage ? corpRounding : month.corp_rounding || 'nearest',
           calculatedExpenseTotal: expectedStage ? draftTotal : (month.calculated_expense_total ?? total(month)),
           notes: {
@@ -164,6 +174,8 @@ export default function Months({
               corpMethod: month.corp_method || 'sqft',
               corpRate: month.corp_value ?? month.corp_rate ?? 0.5,
               corpValue: month.corp_value ?? month.corp_rate ?? 0.5,
+              corp2Bhk: month.corp_2bhk ?? null,
+              corp3Bhk: month.corp_3bhk ?? null,
               corpRounding: month.corp_rounding || 'nearest',
               notes: { ...(month.notes || {}), expensesStage: 'expected', mergeMaintenanceCorp },
               recalculate: false,
@@ -323,7 +335,13 @@ export default function Months({
     );
   };
 
+  const blockNames =
+    data.settings.isBlocks === true
+      ? Array.from(new Set(data.flats.map((f) => String(f.block || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b))
+      : [];
+
   const rows = data.flats
+    .filter((f) => selectedBlock === 'all' || String(f.block || '').trim() === selectedBlock)
     .map((f) => ({ f, d: flatDues(month, f, payments.get(f.flat), admin, data.flats, data.settings.isBlocks === true) }))
     .filter((r) => filter === 'all' || r.d.status === 'unpaid');
 
@@ -540,6 +558,22 @@ export default function Months({
                   onChangeText={setCorpRate}
                   keyboardType="decimal-pad"
                 />
+                <>
+                  <Field
+                    label="Corp Fund — 2 BHK (₹ per flat)"
+                    value={corp2Bhk}
+                    onChangeText={setCorp2Bhk}
+                    keyboardType="decimal-pad"
+                    placeholder={corpRate || 'Default amount'}
+                  />
+                  <Field
+                    label="Corp Fund — 3 BHK (₹ per flat)"
+                    value={corp3Bhk}
+                    onChangeText={setCorp3Bhk}
+                    keyboardType="decimal-pad"
+                    placeholder={corpRate || 'Default amount'}
+                  />
+                </>
               </>
             )}
             <Text style={s.label}>Merge Maintenance and Corp Fund?</Text>
@@ -547,7 +581,7 @@ export default function Months({
               <Chip label="No — separate" active={!mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(false)} />
               <Chip label="Yes — combine" active={mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(true)} />
             </View>
-            <Text style={s.small}>When combined, the Maintenance rounding rule applies to the total charge.</Text>
+            <Text style={s.small}>Rounding is applied to the combined monthly charge.</Text>
             <Text style={s.label}>{mergeMaintenanceCorp ? 'Combined charge rounding' : 'Maintenance rounding'}</Text>
             <View style={s.rowWrap}>
               <Chip label="2 decimals" active={calcRounding === 'none'} onPress={() => setCalcRounding('none')} />
@@ -647,6 +681,16 @@ export default function Months({
       )}
 
       {/* Flat Payment List */}
+      {data.settings.isBlocks === true && blockNames.length > 0 && (
+        <Section title="Block">
+          <View style={s.rowWrap}>
+            <Chip label="All Blocks" active={selectedBlock === 'all'} onPress={() => setSelectedBlock('all')} />
+            {blockNames.map((block) => (
+              <Chip key={block} label={block} active={selectedBlock === block} onPress={() => setSelectedBlock(block)} />
+            ))}
+          </View>
+        </Section>
+      )}
       <Section title="Flats">
         <View style={[s.rowWrap, { marginBottom: 8 }]}>
           <Chip label="All" active={filter === 'all'} onPress={() => setFilter('all')} />

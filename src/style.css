@@ -222,6 +222,36 @@ button:disabled {
 .opt select {
   width: 140px;
 }
+
+/* Corp Fund 2/3 BHK fields use independent grid columns so long labels and controls
+   cannot overlap each other or the neighbouring form field. */
+.corp-bhk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  width: 100%;
+  min-width: 0;
+}
+.corp-bhk-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 140px);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.corp-bhk-field > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.corp-bhk-field input[type="number"] {
+  width: 100%;
+  min-width: 0;
+}
+.corp-bhk-help {
+  display: block;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
 .acts {
   display: flex;
   gap: 6px;
@@ -2868,6 +2898,20 @@ input.calc-value {
 
   .row[style*="flex-wrap"] > .opt {
     flex: 1 1 100%;
+  }
+
+  .corp-bhk-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .corp-bhk-field {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .corp-bhk-field input[type="number"] {
+    width: 100%;
   }
 
   .corpus-form {
@@ -6356,6 +6400,67 @@ html.dark .brand-mark {
   background: #ffffff1c;
   color: #fff;
   font-size: 11px;
+}
+
+/* Keep the serial-number and flat-number columns visible while horizontally scrolling.
+   The header row also stays visible so column labels remain available on long month tables. */
+.month-payments-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.month-payments-table .col-sl {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background: #fff;
+  box-shadow: 2px 0 0 #cbd5e1;
+}
+.month-payments-table thead .col-sl {
+  background: #1b5e20;
+}
+.month-payments-table tbody tr:nth-child(even) .col-sl {
+  background: #f8fafc;
+}
+.month-payments-table tbody tr:hover .col-sl {
+  background: #e8f5e9;
+}
+.month-payments-table tbody tr.unpaid .col-sl {
+  background: #fff5f5;
+}
+.month-payments-table tbody tr.unpaid:hover .col-sl {
+  background: #feecec;
+}
+.month-payments-table tfoot .col-sl {
+  z-index: 7;
+  background: #e8f5e9;
+}
+.month-payments-table .col-flat {
+  position: sticky;
+  left: 54px;
+  z-index: 5;
+  background: #fff;
+  box-shadow: 2px 0 0 #cbd5e1;
+}
+.month-payments-table thead .col-flat {
+  z-index: 7;
+  background: #1b5e20;
+}
+.month-payments-table tbody tr:nth-child(even) .col-flat {
+  background: #f8fafc;
+}
+.month-payments-table tbody tr:hover .col-flat {
+  background: #e8f5e9;
+}
+.month-payments-table tbody tr.unpaid .col-flat {
+  background: #fff5f5;
+}
+.month-payments-table tbody tr.unpaid:hover .col-flat {
+  background: #feecec;
+}
+.month-payments-table tfoot .col-flat {
+  z-index: 7;
+  background: #e8f5e9;
 }
 .month-payments-table tfoot td {
   position: sticky;

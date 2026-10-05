@@ -51,6 +51,10 @@ export interface Month {
   corp_method?: "sqft" | "common" | null;
   corp_applicable?: boolean | null;
   corp_value?: number | null;
+  /** Fixed Corp Fund amount for 2 BHK flats when type-specific rates are configured. */
+  corp_2bhk?: number | null;
+  /** Fixed Corp Fund amount for 3 BHK flats when type-specific rates are configured. */
+  corp_3bhk?: number | null;
   corp_rounding?: Rounding | null;
   excluded_flats?: string[] | null;
   excluded_expense_flats?: string[] | null;

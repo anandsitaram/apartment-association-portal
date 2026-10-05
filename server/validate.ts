@@ -82,6 +82,12 @@ export function monthBody(b: Body) {
   if (b.corpValue != null && !num(b.corpValue, 0, 1e9))
     fail(400, "Corp Fund amount must be a number (0 or more)");
   const corpValue = b.corpValue == null ? null : Number(b.corpValue);
+  if (b.corp2Bhk != null && !num(b.corp2Bhk, 0, 1e9))
+    fail(400, "2 BHK Corp Fund amount must be a number (0 or more)");
+  if (b.corp3Bhk != null && !num(b.corp3Bhk, 0, 1e9))
+    fail(400, "3 BHK Corp Fund amount must be a number (0 or more)");
+  const corp2Bhk = b.corp2Bhk == null ? null : Number(b.corp2Bhk);
+  const corp3Bhk = b.corp3Bhk == null ? null : Number(b.corp3Bhk);
   const corpRounding: Rounding = b.corpRounding ?? b.corp_rounding ?? "nearest";
   if (!["none", "nearest", "up"].includes(corpRounding))
     fail(400, "Unknown Corp Fund round-off option");
@@ -120,6 +126,8 @@ export function monthBody(b: Body) {
     corpMethod,
     corpApplicable: b.corpApplicable == null ? null : !!b.corpApplicable,
     corpValue,
+    corp2Bhk,
+    corp3Bhk,
     corpRounding,
     excludedFlats,
     excludedExpenseFlats,

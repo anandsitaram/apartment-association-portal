@@ -276,8 +276,17 @@ export default function MonthTab({
     hidden = settings.hidden || [];
   // resident names are admin-only (the server does not even send them to anyone else)
   const showName = admin && !hidden.includes("name");
-  const identityCols = ["name", "flat", "bua"].filter(
-    (k) => k === "flat" || (k === "name" ? showName : !hidden.includes(k)),
+  const identityCols = [
+    "sl",
+    "name",
+    "flat",
+    ...(settings.isBlocks === true ? ["block"] : []),
+    "bua",
+  ].filter(
+    (k) =>
+      k === "sl" ||
+      k === "flat" ||
+      (k === "name" ? showName : !hidden.includes(k)),
   );
   // In merged mode the combined charge and payment are stored only in the
   // Maintenance bucket. Corp Fund remains zero in the payment record and UI.
@@ -286,16 +295,16 @@ export default function MonthTab({
     ...identityCols,
     "maint",
     ...(mergeMaintenanceCorp ? ["corp"] : []),
+    "texp",
     mergeMaintenanceCorp ? "tpaid" : "mpaid",
+    ...(!mergeMaintenanceCorp ? ["tpaid"] : []),
     ...custom.map((c) => c.id).filter((k) => !hidden.includes(k)),
   ];
   const corpCols = [...identityCols, "corp", "cpaid"];
   const colLabel = (k: string) => {
     if (settings.labels?.[k]) return settings.labels[k];
     if (k === "maint")
-      return mergeMaintenanceCorp
-        ? "Maintenance + Corp Fund Charge"
-        : "Maintenance Charge";
+      return mergeMaintenanceCorp ? "Maintenance Fund" : "Maintenance Charge";
     if (k === "mpaid") return "Maintenance Paid";
     if (k === "tpaid" && mergeMaintenanceCorp) return "Combined Amount Paid";
     if (k === "corp") return "Corp Fund Charge";
@@ -303,7 +312,35 @@ export default function MonthTab({
     return custom.find((c) => c.id === k)?.name || colName(k, settings, m);
   };
   const [query, setQuery] = useState("");
+  const blockNames =
+    settings.isBlocks === true
+      ? Array.from(
+          new Set(
+            flats.map((f) => String(f.block || "").trim()).filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b))
+      : [];
+  const [selectedBlock, setSelectedBlock] = usePersistentState<string>(
+    "rv_months_block_filter",
+    "all",
+  );
+  useEffect(() => {
+    if (selectedBlock !== "all" && !blockNames.includes(selectedBlock))
+      setSelectedBlock("all");
+  }, [selectedBlock, blockNames.join("|")]);
   const M = (f: Flat) => maintOf(m, f, flats, settings.isBlocks === true),
+    MBase = (f: Flat) =>
+      mergeMaintenanceCorp
+        ? maintOf(
+            {
+              ...m,
+              notes: { ...(m.notes || {}), mergeMaintenanceCorp: false },
+            },
+            f,
+            flats,
+            settings.isBlocks === true,
+          )
+        : M(f),
     C = (f: Flat) => (mergeMaintenanceCorp ? corpChargeOf(f, m) : corpOf(f, m)),
     P = (f: Flat): Partial<Payment> => pays[f.flat] || {};
   // Same rule Row uses for its status dot, so the filter matches what's shown on screen.
@@ -318,12 +355,15 @@ export default function MonthTab({
   const q = query.trim().toLowerCase();
   const visibleFlats = flats.filter(
     (f) =>
+      (selectedBlock === "all" ||
+        String(f.block || "").trim() === selectedBlock) &&
       (statusFilter === "all" || statusOf(f) === statusFilter) &&
       (!q ||
         f.flat.toLowerCase().includes(q) ||
         (showName && (f.name || "").toLowerCase().includes(q))),
   );
   const due = sum(flats, M),
+    maintenanceBaseDue = sum(flats, MBase),
     cd = sum(flats, C),
     mpd = sum(flats, (f) => P(f).maint),
     cpd = sum(flats, (f) => P(f).corp);
@@ -353,7 +393,7 @@ export default function MonthTab({
     flat: showName ? "" : "TOTAL",
     bua: n2(sum(flats, (f) => f.bua)),
     uds: n2(sum(flats, (f) => f.uds)),
-    maint: n2(mergeMaintenanceCorp ? due : due),
+    maint: n2(mergeMaintenanceCorp ? maintenanceBaseDue : due),
     corp: n2(cd),
     texp: n2(mergeMaintenanceCorp ? due : due + cd),
     mpaid: n2(mpd),
@@ -397,8 +437,9 @@ export default function MonthTab({
             <Row
               key={`${paymentPart}-${f.flat}-${m.month}`}
               f={f}
-              mp={M(f)}
+              mp={MBase(f)}
               cd={C(f)}
+              combinedDue={M(f)}
               p={P(f)}
               admin={admin}
               hide={hide}
@@ -752,10 +793,12 @@ export default function MonthTab({
               <div className="settings-example">
                 <span className="muted">Expected combined charges</span>
                 <strong style={{ display: "block", fontSize: "1.15rem" }}>
-                  {inr(due + cd)}
+                  {inr(mergeMaintenanceCorp ? due : due + cd)}
                 </strong>
                 <span className="muted">
-                  Maintenance {inr(due)} + Corp Fund {inr(cd)}
+                  Maintenance{" "}
+                  {inr(mergeMaintenanceCorp ? maintenanceBaseDue : due)} + Corp
+                  Fund {inr(cd)}
                 </span>
               </div>
               <div className="settings-example">
@@ -1044,6 +1087,8 @@ export default function MonthTab({
                     corpRate: m.corp_rate ?? 0.5,
                     corpMethod: m.corp_method || "sqft",
                     corpValue: m.corp_value ?? m.corp_rate ?? 0.5,
+                    corp2Bhk: m.corp_2bhk ?? null,
+                    corp3Bhk: m.corp_3bhk ?? null,
                     corpRounding: m.corp_rounding || "nearest",
                     excludedFlats: m.excluded_flats || [],
                     excludedExpenseFlats: m.excluded_expense_flats || [],
@@ -1060,6 +1105,36 @@ export default function MonthTab({
             <p className="month-note-readonly">{m.notes.flats}</p>
           )}
         </div>
+        {settings.isBlocks === true && blockNames.length > 0 && (
+          <section
+            className="card"
+            aria-label="Block filter"
+            style={{ marginTop: 12 }}
+          >
+            <div className="settings-section-heading">
+              <div>
+                <h3>Block</h3>
+                <p className="muted">
+                  Filter the Months view by block. Billing calculations remain
+                  month-wide; block-specific expenses are allocated only to
+                  flats in that block.
+                </p>
+              </div>
+              <select
+                value={selectedBlock}
+                onChange={(e) => setSelectedBlock(e.target.value)}
+                aria-label="Filter by block"
+              >
+                <option value="all">All Blocks</option>
+                {blockNames.map((block) => (
+                  <option key={block} value={block}>
+                    {block}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
+        )}
         <section
           className="card month-payment-section"
           aria-label="Maintenance payments"
