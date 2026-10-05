@@ -6,7 +6,7 @@ export interface Auth {
   user: { name: string; role: Role; flat?: string | null };
 }
 const AUTH_KEY = 'rv_auth';
-const SERVER_KEY = 'rv_server';
+const SERVER_KEY = 'my_apartment_server';
 const MONTH_KEY = 'rv_selected_month';
 
 export const readSession = () => secureGetItem<Auth | null>(AUTH_KEY, null);

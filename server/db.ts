@@ -589,7 +589,7 @@ export async function ensureSchema(
     if (!(
       value &&
       typeof value === "object" &&
-      (value as any).app === "rv-fallon-encrypted-backup" &&
+      (value as any).app === "my-apartment-encrypted-backup" &&
       (value as any).encrypted === true
     )) {
       await query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [

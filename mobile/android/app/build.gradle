@@ -76,9 +76,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.rvfallon.mobile"
+    namespace "com.myapartment.mobile"
     defaultConfig {
-        applicationId "com.rvfallon.mobile"
+        applicationId "com.myapartment.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode = (project.findProperty("VERSION_CODE") ?: "1").toString().toInteger()

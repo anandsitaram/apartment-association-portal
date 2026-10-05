@@ -18,6 +18,6 @@
 
 ## Permissions
 
-- iOS camera usage text is configured in `mobile/ios/RVFallon/Info.plist`.
+- iOS camera usage text is configured in `mobile/ios/MyApartment/Info.plist`.
 - Android camera permission is declared in `mobile/android/app/src/main/AndroidManifest.xml`.
 - Camera use must be tested on a physical iPhone and Android device. Native compilation and live API/database testing have not been run in this environment.

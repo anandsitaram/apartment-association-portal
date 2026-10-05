@@ -40,9 +40,9 @@ jobs:
         run: |
           mkdir -p dist
           cp mobile/android/app/build/outputs/apk/release/app-release.apk \
-             "dist/rv-fallon-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
+             "dist/my-apartment-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: rv-fallon-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
+          name: my-apartment-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
           path: dist/*.apk
           retention-days: 2

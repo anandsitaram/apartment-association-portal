@@ -451,7 +451,7 @@ describe("reminders by e-mail", () => {
 describe("backups", () => {
   it("super admin can download a backup (no password hashes)", async () => {
     const { backup } = (await post({ action: "backup" })).body;
-    expect(backup.app).toBe("rv-fallon");
+    expect(backup.app).toBe("my-apartment");
     expect(Object.keys(backup.tables).sort()).toEqual([
       "corpus_ledger",
       "flats",
@@ -498,12 +498,12 @@ describe("backups", () => {
     const sent = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body);
     expect(sent.to).toEqual(["treasurer@example.com"]);
     expect(sent.attachments[0].filename).toMatch(
-      /^rv-fallon-backup-2026-09-21\.json$/,
+      /^my-apartment-backup-2026-09-21\.json$/,
     );
     expect(
       JSON.parse(Buffer.from(sent.attachments[0].content, "base64").toString())
         .app,
-    ).toBe("rv-fallon");
+    ).toBe("my-apartment");
     // pruning: only the newest BACKUP_KEEP (2) are kept
     expect((await post({ action: "listBackups" })).body.backups).toHaveLength(
       2,

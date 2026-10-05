@@ -7,7 +7,7 @@ import {
 
 const ALGORITHM = "aes-256-gcm";
 const PREFIX = "ENC:v1:";
-const KDF_SALT = "rvfallon-salt"; // Retained for compatibility with existing ENC:v1 records.
+const KDF_SALT = "myapartment-salt"; // Retained for compatibility with existing ENC:v1 records.
 
 function deriveKey(secret: string): Buffer {
   if (!secret) throw new Error("Encryption key is not configured");

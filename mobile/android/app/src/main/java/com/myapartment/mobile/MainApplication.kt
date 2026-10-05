@@ -1,4 +1,4 @@
-package com.rvfallon.mobile
+package com.myapartment.mobile
 
 import android.app.Application
 import com.facebook.react.PackageList

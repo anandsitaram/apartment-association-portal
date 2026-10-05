@@ -254,7 +254,7 @@ export const actions: Record<string, Action> = {
       if (!(
         r.data &&
         typeof r.data === "object" &&
-        (r.data as any).app === "rv-fallon-encrypted-backup"
+        (r.data as any).app === "my-apartment-encrypted-backup"
       )) {
         await sql.query("UPDATE backups SET data=$2::jsonb WHERE id=$1", [
           Math.trunc(+b.id) || 0,

@@ -62,7 +62,7 @@ CI: `.github/workflows/mobile-ci.yml` (lint, typecheck, tests, Metro bundle) and
 ```
 mobile/
   index.ts  app.json  metro.config.js  babel.config.js
-  android/  ios/                    native shells (package com.rvfallon.mobile)
+  android/  ios/                    native shells (package com.myapartment.mobile)
   src/
     app/         App.tsx, AppInner.tsx (boot, session, lock, data loading, tabs)
     core/        api (binds shared/api-client to the chosen server), config, pages (which pages the app implements, tab layout), status (badge wording)

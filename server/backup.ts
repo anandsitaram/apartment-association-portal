@@ -52,7 +52,7 @@ const encryptRowsForStorage = (
 // query: (text) => Promise<rows>. Users (password hashes) are only included on request.
 
 export interface EncryptedBackupEnvelope {
-  app: "rv-fallon-encrypted-backup";
+  app: "my-apartment-encrypted-backup";
   version: 1;
   at: string;
   encrypted: true;
@@ -70,14 +70,14 @@ export function protectBackup(data: unknown): EncryptedBackupEnvelope {
   if (
     data &&
     typeof data === "object" &&
-    (data as any).app === "rv-fallon-encrypted-backup" &&
+    (data as any).app === "my-apartment-encrypted-backup" &&
     (data as any).encrypted === true &&
     typeof (data as any).payload === "string"
   ) {
     return data as EncryptedBackupEnvelope;
   }
   return {
-    app: "rv-fallon-encrypted-backup",
+    app: "my-apartment-encrypted-backup",
     version: 1,
     at,
     encrypted: true,
@@ -89,14 +89,14 @@ export function unprotectBackup(data: unknown): BackupFile {
   if (
     data &&
     typeof data === "object" &&
-    (data as any).app === "rv-fallon-encrypted-backup" &&
+    (data as any).app === "my-apartment-encrypted-backup" &&
     (data as any).encrypted === true
   ) {
     const payload = (data as any).payload;
     if (typeof payload !== "string")
       throw new Error("Encrypted backup payload is missing");
     const parsed = JSON.parse(decryptData(payload));
-    if (parsed?.app !== "rv-fallon" || typeof parsed?.tables !== "object")
+    if (parsed?.app !== "my-apartment" || typeof parsed?.tables !== "object")
       throw new Error("Decrypted backup format is invalid");
     return parsed as BackupFile;
   }
@@ -121,7 +121,12 @@ export async function dump(
         ? "SELECT * FROM settings WHERE key <> 'schema_version' ORDER BY key"
         : `SELECT * FROM ${t}`,
     );
-  return { app: "rv-fallon", version: 1, at: new Date().toISOString(), tables };
+  return {
+    app: "my-apartment",
+    version: 1,
+    at: new Date().toISOString(),
+    tables,
+  };
 }
 
 // Replace the contents of the backed-up tables with `data`, all-or-nothing. `c` is a connected node-postgres client.
@@ -129,7 +134,7 @@ export async function restore(
   c: { query: (text: string, params?: unknown[]) => Promise<unknown> },
   data: BackupFile,
 ) {
-  if (data?.app !== "rv-fallon" || typeof data.tables !== "object")
+  if (data?.app !== "my-apartment" || typeof data.tables !== "object")
     throw new Error("This is not a valid application backup file");
   await c.query("BEGIN");
   try {

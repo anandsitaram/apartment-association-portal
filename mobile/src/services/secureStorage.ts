@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
 import CryptoJS from 'crypto-js';
 
-const KEYCHAIN_SERVICE_PREFIX = 'com.rvfallon.mobile.secure.';
-const LEGACY_MASTER_SERVICE = 'com.rvfallon.mobile.masterkey';
+const KEYCHAIN_SERVICE_PREFIX = 'com.myapartment.mobile.secure.';
+const LEGACY_MASTER_SERVICE = 'com.myapartment.mobile.masterkey';
 
 function serviceFor(key: string): string {
   // Keychain service identifiers are opaque; avoid arbitrary caller characters.

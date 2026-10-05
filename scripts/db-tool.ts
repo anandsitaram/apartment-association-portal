@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Database helper. Usage (from the project folder):
-//   npm run db -- backup [file]            save all data to a JSON file (default rv-fallon-backup-<date>.json)
+//   npm run db -- backup [file]            save all data to a JSON file (default my-apartment-backup-<date>.json)
 //   npm run db -- restore <file> --yes     REPLACE the data in DATABASE_URL with the file's contents
 //   npm run db -- copy --yes               copy everything from SOURCE_DATABASE_URL to DATABASE_URL (e.g. Neon -> Supabase)
 // URLs come from the environment (or .env.local). Add --users to `backup` to include login accounts (password hashes).
@@ -51,7 +51,7 @@ try {
     });
     const file =
       args[0] ||
-      `rv-fallon-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      `my-apartment-backup-${new Date().toISOString().slice(0, 10)}.json`;
     writeFileSync(file, JSON.stringify(protectBackup(data), null, 1));
     console.log(
       `Saved encrypted ${file} (${counts(Object.fromEntries(Object.entries(data.tables).map(([k, r]) => [k, r.length])))})`,

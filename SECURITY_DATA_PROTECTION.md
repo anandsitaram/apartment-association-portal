@@ -1,4 +1,4 @@
-# RV Fallon data-protection changes and deployment requirements
+# My Apartment data-protection changes and deployment requirements
 
 ## Application changes in this release
 
@@ -11,7 +11,7 @@
 
 ## What this does not mean
 
-This does **not** encrypt every individual relational column at the application layer. RV Fallon relies on plaintext relational values for matching, sorting, constraints, and calculations. Full-database encryption at rest must be provided and enabled by the PostgreSQL hosting provider or through an independently designed database-encryption layer. Do not claim full database-at-rest encryption until the production provider setting is verified.
+This does **not** encrypt every individual relational column at the application layer. My Apartment relies on plaintext relational values for matching, sorting, constraints, and calculations. Full-database encryption at rest must be provided and enabled by the PostgreSQL hosting provider or through an independently designed database-encryption layer. Do not claim full database-at-rest encryption until the production provider setting is verified.
 
 ## Required deployment checklist
 

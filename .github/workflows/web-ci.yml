@@ -35,7 +35,7 @@ jobs:
       - name: Upload production build for inspection
         uses: actions/upload-artifact@v4
         with:
-          name: rv-fallon-web-dist
+          name: my-apartment-web-dist
           path: dist/
           if-no-files-found: error
           retention-days: 7

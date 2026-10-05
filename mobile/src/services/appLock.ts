@@ -5,7 +5,7 @@ import * as Keychain from 'react-native-keychain';
 import CryptoJS from 'crypto-js';
 import { secureGetItem, secureSetItem } from './secureStorage';
 
-const BIOMETRIC_SERVICE = 'com.rvfallon.mobile.applock.biometric';
+const BIOMETRIC_SERVICE = 'com.myapartment.mobile.applock.biometric';
 const LOCK_KEY = 'rv_applock';
 
 export type LockMode = 'off' | 'pin' | 'biometric';

@@ -173,7 +173,7 @@ describe("app on the pg driver", () => {
 
 describe("db tool: backup / restore / copy", () => {
   const fixture = {
-    app: "rv-fallon",
+    app: "my-apartment",
     version: 1,
     at: "2026-09-01T00:00:00Z",
     tables: {
