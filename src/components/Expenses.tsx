@@ -632,9 +632,7 @@ export default function Expenses({
           <p className="muted">
             Association-wide expenses are shared across the configured divisor.
             Specific-block expenses are split only among flats assigned to that
-            block. Assign blocks in the Flats tab first. Block allocation
-            affects the Divide total expenses method; Common amount and Amount
-            per sq ft keep their existing calculations.
+            block. Assign blocks in the Flats tab first.
           </p>
         )}
         {settings?.isBlocks === true && blockNames.length === 0 && (

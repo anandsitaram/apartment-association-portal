@@ -429,6 +429,9 @@ export function settingsBody(s: Body = {}) {
       Number(s.totalFlats) <= 10000
         ? Math.trunc(Number(s.totalFlats))
         : 0,
+    // Multi-block billing must survive settings validation and database saves.
+    // Explicit true enables it; missing/false preserves normal single-building billing.
+    isBlocks: s.isBlocks === true,
   };
 }
 
