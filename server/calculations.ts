@@ -30,16 +30,19 @@ export function snapshotOf(
   m: Row | undefined,
   flats: Row[] | undefined,
   payments: Row[] | undefined,
+  isBlocks = false,
 ) {
   const s = frozenSnapshot(
     (flats || []) as any[],
     { ...(m || {}), month } as any,
     (payments || []) as any[],
+    isBlocks,
   );
   return {
     ...s,
     // descriptions are stored truncated (the snapshot lives in a settings row)
     expenses: s.expenses.map((e) => ({
+      ...e,
       description: String(e?.description ?? "").slice(0, 60),
       amount: e.amount,
     })),

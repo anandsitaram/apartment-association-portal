@@ -84,7 +84,9 @@ export const actions: Record<string, Action> = {
       if (!subject || !message)
         fail(400, "Subject and Message content are required");
 
-      const flats = await sql.query("SELECT flat, email, phone FROM flats");
+      const flats = await sql.query(
+        "SELECT flat, email, phone, bua, block, excluded, corp_excluded FROM flats",
+      );
       let targets = flats;
       let targetLabel = "All Residents";
 
@@ -105,7 +107,13 @@ export const actions: Record<string, Action> = {
             "SELECT flat, maint, corp FROM payments WHERE month=$1",
             [latest.month],
           );
-          const snap = snapshotOf(latest.month, latest, flats, payments);
+          const snap = snapshotOf(
+            latest.month,
+            latest,
+            flats,
+            payments,
+            settingsRow?.value?.isBlocks === true,
+          );
           targets = flats.filter((f) => {
             const due = (snap.due[f.flat] || 0) + (snap.cdue[f.flat] || 0);
             const paid = (snap.paid[f.flat] || 0) + (snap.cpaid[f.flat] || 0);

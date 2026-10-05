@@ -5,6 +5,7 @@ import type { SummaryExportArgs } from "./export-summary.js";
 import {
   orgName,
   orgShort,
+  corpChargeOf,
   isCorpExcluded,
   isExpenseExcluded,
   isMaintExcluded,
@@ -122,9 +123,13 @@ export async function buildBook(
     const r = 20 + k,
       p: Partial<Payment> = pays[f.flat] || {},
       mp = maintOf(m, f),
-      cd = corpOf(f, m),
+      cd =
+        m.notes?.mergeMaintenanceCorp === true
+          ? corpChargeOf(f, m)
+          : corpOf(f, m),
       mDiff = r2((p.maint || 0) - mp),
-      cDiff = r2((p.corp || 0) - cd);
+      cDiff =
+        m.notes?.mergeMaintenanceCorp === true ? 0 : r2((p.corp || 0) - cd);
     ws.getCell(`A${r}`).value = k + 1;
     ws.getCell(`B${r}`).value = hide
       ? "••••"
@@ -135,8 +140,8 @@ export async function buildBook(
     ws.getCell(`G${r}`).value = mp;
     ws.getCell(`H${r}`).value = cd;
     ws.getCell(`${totalExpLetter}${r}`).value = {
-      formula: `G${r}+H${r}`,
-      result: r2(mp + cd),
+      formula: m.notes?.mergeMaintenanceCorp === true ? `G${r}` : `G${r}+H${r}`,
+      result: r2(m.notes?.mergeMaintenanceCorp === true ? mp : mp + cd),
     };
     ws.getCell(`${totalPaidLetter}${r}`).value = {
       formula: `N(I${r})+N(J${r})`,
@@ -151,7 +156,10 @@ export async function buildBook(
       result: mDiff,
     };
     ws.getCell(`N${r}`).value = {
-      formula: `ROUND(N(J${r})-H${r},2)`,
+      formula:
+        m.notes?.mergeMaintenanceCorp === true
+          ? `0`
+          : `ROUND(N(J${r})-H${r},2)`,
       result: cDiff,
     };
     S.bua += f.bua;
@@ -256,7 +264,7 @@ export async function buildBook(
       "texp",
       "Expected Total (Maint + Corp Fund)",
       totalExpLetter,
-      r2(S.g + S.h),
+      r2(m.notes?.mergeMaintenanceCorp === true ? S.g : S.g + S.h),
     ],
     [
       totalPaidCol,
@@ -558,7 +566,11 @@ export async function buildBook(
     const r = 20 + k;
     const f = flats[k];
     const p: Partial<Payment> = pays[f.flat] || {};
-    const expected = r2(maintOf(m, f) + corpOf(f, m));
+    const expected = r2(
+      m.notes?.mergeMaintenanceCorp === true
+        ? maintOf(m, f, flats, args.settings?.isBlocks === true)
+        : maintOf(m, f, flats, args.settings?.isBlocks === true) + corpOf(f, m),
+    );
     const paid = r2((p.maint || 0) + (p.corp || 0));
     ws.getCell(r, finalExpectedCol).value = expected;
     ws.getCell(r, finalPaidCol).value = paid;
@@ -571,7 +583,7 @@ export async function buildBook(
   }
   ws.getCell(50, finalExpectedCol).value = {
     formula: `SUM(${ws.getColumn(finalExpectedCol).letter}20:${ws.getColumn(finalExpectedCol).letter}49)`,
-    result: r2(S.g + S.h),
+    result: r2(m.notes?.mergeMaintenanceCorp === true ? S.g : S.g + S.h),
   };
   ws.getCell(50, finalPaidCol).value = {
     formula: `SUM(${ws.getColumn(finalPaidCol).letter}20:${ws.getColumn(finalPaidCol).letter}49)`,

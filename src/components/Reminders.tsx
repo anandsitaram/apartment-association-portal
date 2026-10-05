@@ -52,7 +52,9 @@ export default function Reminders({
   );
   const rows = data.flats
     .map((f) => {
-      const due = maintOf(m, f) + corpOf(f, m),
+      const due =
+          maintOf(m, f, data.flats, data.settings.isBlocks === true) +
+          corpOf(f, m),
         p: Partial<Payment> = pays[f.flat] || {},
         paid = (p.maint || 0) + (p.corp || 0);
       return { f, due, paid, out: due - paid };

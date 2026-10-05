@@ -23,6 +23,7 @@ import type {
 type MonthCalc = Partial<Month> & { method?: Method; rounding?: Rounding };
 type FlatCalc = {
   flat?: string;
+  block?: string;
   bua: number;
   excluded?: boolean;
   corp_excluded?: boolean;
@@ -108,15 +109,60 @@ export const isMaintExcluded = (
 // Maintenance per flat. In merged mode the selected maintenance rounding applies
 // to the combined current-month Maintenance + Corp Fund charge. The adjustment is
 // placed in the maintenance bucket; the Corp Fund amount itself stays unchanged.
-export const maintOf = (m: MonthCalc, f: FlatCalc) => {
+export const maintOf = (
+  m: MonthCalc,
+  f: FlatCalc,
+  allFlats?: readonly FlatCalc[],
+  isBlocks = false,
+) => {
   const carry = m.notes?.carryForward?.[f.flat ?? ""];
   const excluded = isMaintExcluded(m, f) || isExpenseExcluded(m, f);
-  const raw =
+  let raw =
     m.method === "common"
       ? val(m)
       : m.method === "sqft"
         ? val(m) * f.bua
         : billingExpenseTotal(m) / (val(m) || 25);
+  // Hybrid allocation applies to expense-based billing only. Association-wide
+  // expenses retain the configured divisor; block expenses are divided only
+  // among flats assigned to that block. Without block-specific expense lines,
+  // legacy calculations remain unchanged.
+  const blockExpenses = (m.expenses || []).filter(
+    (e) => e.allocationScope === "block" && String(e.block || "").trim(),
+  );
+  if (
+    isBlocks &&
+    m.method === "divide" &&
+    blockExpenses.length &&
+    allFlats?.length
+  ) {
+    const blockExpenseTotal = blockExpenses.reduce(
+      (sum, e) => sum + (Number(e.amount) || 0),
+      0,
+    );
+    // Preserve the saved billing total used by legacy expense-based months.
+    // When block expenses exist, their amounts are carved out before dividing
+    // the association-wide remainder among all flats.
+    const sharedTotal = Math.max(0, billingExpenseTotal(m) - blockExpenseTotal);
+    const matchingBlock = String(f.block || "").trim();
+    const blockTotal = matchingBlock
+      ? blockExpenses.reduce(
+          (sum, e) =>
+            sum +
+            (String(e.block || "").trim() === matchingBlock
+              ? Number(e.amount) || 0
+              : 0),
+          0,
+        )
+      : 0;
+    const blockCount = matchingBlock
+      ? allFlats.filter(
+          (flat) => String(flat.block || "").trim() === matchingBlock,
+        ).length
+      : 0;
+    raw =
+      sharedTotal / (val(m) || 25) + (blockCount ? blockTotal / blockCount : 0);
+  }
   let current = 0;
   if (m.notes?.mergeMaintenanceCorp === true) {
     // The entire rounded amount is stored and displayed as Maintenance.
@@ -287,6 +333,7 @@ export const snapshotOf = (
   flats: readonly FlatCalc[],
   m: MonthCalc & { month: string },
   pays: readonly Pick<Payment, "flat" | "maint" | "corp">[],
+  isBlocks = false,
 ): Snap => {
   const by: Record<
     string,
@@ -297,10 +344,11 @@ export const snapshotOf = (
   return {
     month: m.month,
     expenses: (m.expenses || []).map((e) => ({
+      ...e,
       description: e.description,
       amount: +e.amount || 0,
     })),
-    due: per((f) => maintOf(m, f)),
+    due: per((f) => maintOf(m, f, flats, isBlocks)),
     cdue: per((f) => corpOf(f, m)),
     paid: per((f) => +(by[f.flat ?? ""]?.maint ?? 0) || 0),
     cpaid: per((f) => +(by[f.flat ?? ""]?.corp ?? 0) || 0),
@@ -452,6 +500,7 @@ export const newMonthBody = (
   const lines: Expense[] =
     source && o.expenses !== "none"
       ? (source.expenses || []).map((e) => ({
+          ...e,
           description: e.description,
           amount: o.expenses === "amounts" ? +e.amount || 0 : 0,
         }))
@@ -524,7 +573,10 @@ export const fyLabel = (fy: number) =>
 
 // `fy` (optional): only that financial year is shown; earlier years feed the opening balance.
 export const buildSummary = (
-  data: Pick<Data, "months" | "payments"> & { archive?: Archived[] },
+  data: Pick<Data, "months" | "payments"> & {
+    archive?: Archived[];
+    settings?: Pick<Settings, "isBlocks">;
+  },
   flats: readonly Flat[],
   fy: number | null = null,
 ) => {
@@ -537,7 +589,12 @@ export const buildSummary = (
     else paymentsByMonth.set(p.month, [p]);
   }
   const live = data.months.map((m) => ({
-    ...snapshotOf(flats, m, paymentsByMonth.get(m.month) || []),
+    ...snapshotOf(
+      flats,
+      m,
+      paymentsByMonth.get(m.month) || [],
+      data.settings?.isBlocks === true,
+    ),
     archived: !!m.archived,
   }));
   const liveKeys = new Set(live.map((v) => v.month));

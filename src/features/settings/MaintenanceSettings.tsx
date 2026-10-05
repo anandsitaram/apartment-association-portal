@@ -191,6 +191,7 @@ export default function MaintenanceSettings({
   const [totalFlats, setTotalFlats] = useState(
     String(settings.totalFlats ?? 0),
   );
+  const [isBlocks, setIsBlocks] = useState(settings.isBlocks === true);
   const [allowAdminUserDeletion, setAllowAdminUserDeletion] = useState(
     settings.allowAdminUserDeletion !== false,
   );
@@ -230,6 +231,7 @@ export default function MaintenanceSettings({
     setAutoReminders(settings.autoReminders === true);
     setHallBookingAmount(String(settings.hallBookingAmount ?? 0));
     setTotalFlats(String(settings.totalFlats ?? 0));
+    setIsBlocks(settings.isBlocks === true);
     setAllowAdminUserDeletion(settings.allowAdminUserDeletion !== false);
     setAllowAdminFlatDeletion(settings.allowAdminFlatDeletion !== false);
     setAllowUsersViewAllFlats(settings.allowUsersViewAllFlats === true);
@@ -246,6 +248,7 @@ export default function MaintenanceSettings({
     settings.autoReminders,
     settings.hallBookingAmount,
     settings.totalFlats,
+    settings.isBlocks,
     settings.allowAdminUserDeletion,
     settings.allowAdminFlatDeletion,
     settings.allowUsersViewAllFlats,
@@ -304,6 +307,7 @@ export default function MaintenanceSettings({
       dueDay: dueDayOk ? +dueDay : 0,
       autoReminders,
       totalFlats: totalFlatsOk ? Math.trunc(+totalFlats) : 0,
+      isBlocks,
       ...(superAdmin || admin ? { allowUsersViewAllFlats } : {}),
     });
   const saveHall = () =>
@@ -525,6 +529,34 @@ export default function MaintenanceSettings({
                   value={totalFlats}
                   onChange={(e) => setTotalFlats(e.target.value)}
                   placeholder="e.g. 120"
+                />
+              </label>
+            </div>
+            <div className="card settings-section-card">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Multi-block billing</h3>
+                  <p className="muted">
+                    Enable this only when your association has multiple
+                    blocks/buildings. When enabled, block-specific expenses are
+                    allocated only to flats in that block; association-wide
+                    expenses remain shared. When disabled, billing follows the
+                    normal single-association calculation.
+                  </p>
+                </div>
+              </div>
+              <label className="settings-toggle">
+                <span>
+                  <b>Is Blocks</b>
+                  <small>
+                    Off by default. Turn on to enable block fields and
+                    block-specific expense allocation.
+                  </small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={isBlocks}
+                  onChange={(e) => setIsBlocks(e.target.checked)}
                 />
               </label>
             </div>

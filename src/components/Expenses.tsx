@@ -84,6 +84,9 @@ export default function Expenses({
     setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
   const t = sum(rows, (r) => +r.amount);
   const divisor = Math.max(flats.length, 1);
+  const blockNames = Array.from(
+    new Set(flats.map((f) => String(f.block || "").trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
   // Once maintenance has been calculated, actual-expense edits must not change
   // the saved billing basis or divisor. Only an explicit recalculation uses the
   // current flat count and selected billing settings.
@@ -165,6 +168,7 @@ export default function Expenses({
         action: "saveMonth",
         month: m.month,
         expenses: rows.map((r) => ({
+          ...r,
           description: r.description,
           amount: +r.amount || 0,
         })),
@@ -199,6 +203,7 @@ export default function Expenses({
         action: "saveMonth",
         month: m.month,
         expenses: rows.map((r) => ({
+          ...r,
           description: r.description,
           amount: +r.amount || 0,
         })),
@@ -249,6 +254,7 @@ export default function Expenses({
         action: "saveMonth",
         month: m.month,
         expenses: rows.map((r) => ({
+          ...r,
           description: r.description,
           amount: +r.amount || 0,
         })),
@@ -294,6 +300,7 @@ export default function Expenses({
         action: "saveMonth",
         month: m.month,
         expenses: rows.map((r) => ({
+          ...r,
           description: r.description,
           amount: +r.amount || 0,
         })),
@@ -425,40 +432,6 @@ export default function Expenses({
             </label>
           )}
           <label className="opt">
-            <span>Maintenance rounding</span>
-            <select
-              value={rounding}
-              onChange={(e) => setRounding(e.target.value as Month["rounding"])}
-            >
-              <option value="none">None (2 decimals)</option>
-              <option value="nearest">Nearest ₹1</option>
-              <option value="up">Round up to ₹1</option>
-              <option value="up50">Round up to next ₹50</option>
-              <option value="up100">Round up to next ₹100</option>
-            </select>
-          </label>
-          <label className="opt">
-            <span>Merge Maintenance and Corp Fund?</span>
-            <select
-              value={mergeMaintenanceCorp ? "yes" : "no"}
-              onChange={(e) =>
-                setMergeMaintenanceCorp(e.target.value === "yes")
-              }
-            >
-              <option value="no">
-                No — show separate Maintenance and Corp Fund tables
-              </option>
-              <option value="yes">
-                Yes — show one combined charge and payment entry under
-                Maintenance
-              </option>
-            </select>
-            <small className="muted">
-              When enabled, rounding applies to the combined current-month
-              charge. Corp Fund is still allocated internally for accounting.
-            </small>
-          </label>
-          <label className="opt">
             <span>Corp Fund applicable?</span>
             <select
               value={corpApplicable ? "yes" : "no"}
@@ -498,22 +471,62 @@ export default function Expenses({
                   onChange={(e) => setCorpRate(e.target.value)}
                 />
               </label>
-              <label className="opt">
-                <span>Corp Fund rounding</span>
-                <select
-                  value={corpRounding}
-                  onChange={(e) =>
-                    setCorpRounding(
-                      e.target.value as NonNullable<Month["corp_rounding"]>,
-                    )
-                  }
-                >
-                  <option value="none">None (2 decimals)</option>
-                  <option value="nearest">Nearest ₹1</option>
-                  <option value="up">Round up to ₹1</option>
-                </select>
-              </label>
             </>
+          )}
+          <label className="opt">
+            <span>Merge Maintenance and Corp Fund?</span>
+            <select
+              value={mergeMaintenanceCorp ? "yes" : "no"}
+              onChange={(e) =>
+                setMergeMaintenanceCorp(e.target.value === "yes")
+              }
+            >
+              <option value="no">
+                No — show separate Maintenance and Corp Fund tables
+              </option>
+              <option value="yes">
+                Yes — show one combined charge and payment entry under
+                Maintenance
+              </option>
+            </select>
+            <small className="muted">
+              When enabled, the Maintenance rounding rule applies to the
+              combined current-month charge.
+            </small>
+          </label>
+          <label className="opt">
+            <span>
+              {mergeMaintenanceCorp
+                ? "Combined charge rounding"
+                : "Maintenance rounding"}
+            </span>
+            <select
+              value={rounding}
+              onChange={(e) => setRounding(e.target.value as Month["rounding"])}
+            >
+              <option value="none">None (2 decimals)</option>
+              <option value="nearest">Nearest ₹1</option>
+              <option value="up">Round up to ₹1</option>
+              <option value="up50">Round up to next ₹50</option>
+              <option value="up100">Round up to next ₹100</option>
+            </select>
+          </label>
+          {corpApplicable && !mergeMaintenanceCorp && (
+            <label className="opt">
+              <span>Corp Fund rounding</span>
+              <select
+                value={corpRounding}
+                onChange={(e) =>
+                  setCorpRounding(
+                    e.target.value as NonNullable<Month["corp_rounding"]>,
+                  )
+                }
+              >
+                <option value="none">None (2 decimals)</option>
+                <option value="nearest">Nearest ₹1</option>
+                <option value="up">Round up to ₹1</option>
+              </select>
+            </label>
           )}
         </fieldset>
       )}
@@ -532,6 +545,55 @@ export default function Expenses({
             onChange={(e) => upd(i, "description", e.target.value)}
             placeholder="Expense name"
           />
+          {settings?.isBlocks === true && (
+            <select
+              disabled={!admin}
+              aria-label="Expense allocation scope"
+              title="Choose whether this expense is shared by the association or allocated only within one block"
+              value={r.allocationScope || "association"}
+              onChange={(e) => {
+                const scope = e.target.value as "association" | "block";
+                setRows(
+                  rows.map((row, j) =>
+                    j === i
+                      ? {
+                          ...row,
+                          allocationScope: scope,
+                          block:
+                            scope === "block"
+                              ? row.block || blockNames[0] || ""
+                              : null,
+                        }
+                      : row,
+                  ),
+                );
+              }}
+            >
+              <option value="association">Association-wide</option>
+              <option value="block">Specific block</option>
+            </select>
+          )}
+          {settings?.isBlocks === true &&
+            (r.allocationScope || "association") === "block" && (
+              <select
+                disabled={!admin || blockNames.length === 0}
+                aria-label="Expense block"
+                title={
+                  blockNames.length
+                    ? "Block receiving this expense allocation"
+                    : "Add a block to one or more flats first"
+                }
+                value={r.block || ""}
+                onChange={(e) => upd(i, "block", e.target.value)}
+              >
+                <option value="">Select block…</option>
+                {blockNames.map((block) => (
+                  <option key={block} value={block}>
+                    {block}
+                  </option>
+                ))}
+              </select>
+            )}
           <input
             disabled={!admin}
             aria-label="Expense amount"
@@ -566,6 +628,22 @@ export default function Expenses({
         </div>
       ))}
       <div className="row">
+        {settings?.isBlocks === true && blockNames.length > 0 && (
+          <p className="muted">
+            Association-wide expenses are shared across the configured divisor.
+            Specific-block expenses are split only among flats assigned to that
+            block. Assign blocks in the Flats tab first. Block allocation
+            affects the Divide total expenses method; Common amount and Amount
+            per sq ft keep their existing calculations.
+          </p>
+        )}
+        {settings?.isBlocks === true && blockNames.length === 0 && (
+          <p className="muted">
+            For multi-block billing, assign a Block / Building to flats in the
+            Flats tab. Expenses can then be allocated association-wide or to a
+            specific block.
+          </p>
+        )}
         <b>
           {stage === "expected"
             ? "Total expected expenses"
@@ -590,8 +668,7 @@ export default function Expenses({
               <p>
                 Maintenance + Corp Fund are combined per flat and rounded using
                 the selected rule. The combined charge is shown in the
-                Maintenance payments table; Corp Fund remains internally
-                accounted separately.
+                Maintenance payments table.
               </p>
             ) : (
               <p>
@@ -615,7 +692,12 @@ export default function Expenses({
         <div className="row">
           <button
             type="button"
-            onClick={() => setRows([...rows, { description: "", amount: 0 }])}
+            onClick={() =>
+              setRows([
+                ...rows,
+                { description: "", amount: 0, allocationScope: "association" },
+              ])
+            }
           >
             + Add expense
           </button>
@@ -630,6 +712,7 @@ export default function Expenses({
                 {
                   description: e.target.value,
                   amount: settings?.expenseHeadAmounts?.[e.target.value] || 0,
+                  allocationScope: "association",
                 },
               ])
             }

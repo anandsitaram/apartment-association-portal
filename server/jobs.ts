@@ -89,12 +89,20 @@ export async function sendOverdueReminders(now = new Date()) {
     [subject],
   );
   if (done) return out;
-  const flats = await sql.query("SELECT flat, email, phone FROM flats");
+  const flats = await sql.query(
+    "SELECT flat, email, phone, bua, block, excluded, corp_excluded FROM flats",
+  );
   const payments = await sql.query(
     "SELECT flat, maint, corp FROM payments WHERE month=$1",
     [latest.month],
   );
-  const snap = snapshotOf(latest.month, latest, flats, payments);
+  const snap = snapshotOf(
+    latest.month,
+    latest,
+    flats,
+    payments,
+    s.isBlocks === true,
+  );
   const orgName = String(s.orgName || s.orgShort || APP_BRAND_NAME).trim();
   for (const f of flats) {
     const due = (snap.due[f.flat] || 0) + (snap.cdue[f.flat] || 0);

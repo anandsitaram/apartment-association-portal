@@ -35,7 +35,7 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
   if (!month || !S.ms.length) return <EmptyState text="No months have been added yet." />;
 
   const mine = !admin ? data.flats.find((f) => f.flat === flat) : undefined;
-  const totals = monthTotals(month, data.flats, data.payments, admin);
+  const totals = monthTotals(month, data.flats, data.payments, admin, data.settings.isBlocks === true);
 
   // Month-wise calculation for the selected period
   const periodRows = S.ms.map((v) => {
@@ -62,6 +62,8 @@ export default function Dashboard({ data, admin, flat, onNavigate }: ScreenProps
         mine,
         data.payments.find((p) => p.month === month.month && p.flat === mine.flat),
         false,
+        data.flats,
+        data.settings.isBlocks === true,
       )
     : null;
 

@@ -8,6 +8,10 @@ export type NotificationChannel = "email" | "sms" | "whatsapp" | "all";
 export interface Expense {
   description: string;
   amount: number;
+  /** Defaults to association-wide for expenses created before block allocation. */
+  allocationScope?: "association" | "block";
+  /** Block name when allocationScope is "block"; absent for association-wide expenses. */
+  block?: string | null;
 }
 
 export interface Flat {
@@ -17,6 +21,8 @@ export interface Flat {
   type: string;
   bua: number;
   uds: number;
+  /** Optional building/block name; blank for single-building associations. */
+  block?: string;
   phone?: string;
   email?: string;
   excluded?: boolean;
@@ -140,6 +146,8 @@ export interface Settings {
   billing: Billing | null;
   hallBookingAmount?: number;
   totalFlats?: number;
+  /** Enable multi-block billing and block-specific expense allocation. Off preserves standard billing. */
+  isBlocks?: boolean;
   serviceContacts?: {
     id: string;
     category: string;

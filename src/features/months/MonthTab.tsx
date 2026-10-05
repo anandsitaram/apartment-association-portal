@@ -11,6 +11,7 @@ import { call, errText, type Save } from "../../api.js";
 import { exportMonth } from "../../export.js";
 import {
   corpOf,
+  corpChargeOf,
   dueDateText,
   inr,
   isDueDatePassed,
@@ -284,6 +285,7 @@ export default function MonthTab({
   const maintenanceCols = [
     ...identityCols,
     "maint",
+    ...(mergeMaintenanceCorp ? ["corp"] : []),
     mergeMaintenanceCorp ? "tpaid" : "mpaid",
     ...custom.map((c) => c.id).filter((k) => !hidden.includes(k)),
   ];
@@ -301,8 +303,8 @@ export default function MonthTab({
     return custom.find((c) => c.id === k)?.name || colName(k, settings, m);
   };
   const [query, setQuery] = useState("");
-  const M = (f: Flat) => maintOf(m, f),
-    C = (f: Flat) => corpOf(f, m),
+  const M = (f: Flat) => maintOf(m, f, flats, settings.isBlocks === true),
+    C = (f: Flat) => (mergeMaintenanceCorp ? corpChargeOf(f, m) : corpOf(f, m)),
     P = (f: Flat): Partial<Payment> => pays[f.flat] || {};
   // Same rule Row uses for its status dot, so the filter matches what's shown on screen.
   const statusOf = (f: Flat): Status => {
@@ -352,7 +354,7 @@ export default function MonthTab({
     bua: n2(sum(flats, (f) => f.bua)),
     uds: n2(sum(flats, (f) => f.uds)),
     maint: n2(mergeMaintenanceCorp ? due : due),
-    corp: n2(mergeMaintenanceCorp ? 0 : cd),
+    corp: n2(cd),
     texp: n2(mergeMaintenanceCorp ? due : due + cd),
     mpaid: n2(mpd),
     cpaid: n2(mergeMaintenanceCorp ? 0 : cpd),
@@ -489,7 +491,8 @@ export default function MonthTab({
                     settings,
                     sheet: label(m.month),
                     corpOf,
-                    maintOf,
+                    maintOf: (month, flat) =>
+                      maintOf(month, flat, flats, settings.isBlocks === true),
                   }).catch((e) =>
                     notify("Export failed: " + errText(e), "error"),
                   )

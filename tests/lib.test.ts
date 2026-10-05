@@ -31,6 +31,66 @@ const month = (o: Record<string, any> = {}): any => ({
   ...o,
 });
 
+describe("Hybrid block expense allocation", () => {
+  const blockFlats: any[] = [
+    { flat: "A-101", block: "A", sl: 1, bua: 1000, uds: 300 },
+    { flat: "A-102", block: "A", sl: 2, bua: 1000, uds: 300 },
+    { flat: "B-101", block: "B", sl: 3, bua: 1000, uds: 300 },
+  ];
+
+  it("shares association expenses across the configured divisor and block expenses within that block", () => {
+    const m = month({
+      value: 3,
+      expenses: [
+        {
+          description: "Security",
+          amount: 900,
+          allocationScope: "association",
+        },
+        {
+          description: "Lift repair",
+          amount: 400,
+          allocationScope: "block",
+          block: "A",
+        },
+        {
+          description: "Painting",
+          amount: 300,
+          allocationScope: "block",
+          block: "B",
+        },
+      ],
+    });
+    expect(maintOf(m, blockFlats[0], blockFlats, true)).toBeCloseTo(500, 6); // 300 shared + 200 block A
+    expect(maintOf(m, blockFlats[1], blockFlats, true)).toBeCloseTo(500, 6);
+    expect(maintOf(m, blockFlats[2], blockFlats, true)).toBeCloseTo(600, 6); // 300 shared + 300 block B
+  });
+
+  it("preserves legacy expense division when no block-specific expense is present", () => {
+    const m = month({
+      value: 3,
+      expenses: [{ description: "Security", amount: 900 }],
+    });
+    expect(maintOf(m, blockFlats[0], blockFlats, true)).toBe(300);
+  });
+
+  it("does not apply block expense allocation to fixed or per-square-foot methods", () => {
+    const m = month({
+      method: "common",
+      value: 100,
+      expenses: [
+        {
+          description: "Lift repair",
+          amount: 400,
+          allocationScope: "block",
+          block: "A",
+        },
+      ],
+    });
+    expect(maintOf(m, blockFlats[0], blockFlats, true)).toBe(100);
+  });
+});
+
 describe("Corp Fund rounding", () => {
   it("supports a fixed Corp Fund amount per included flat", () => {
     const fixed = month({

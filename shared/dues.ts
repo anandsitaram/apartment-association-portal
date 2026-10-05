@@ -40,8 +40,10 @@ export function flatDues(
   flat: Flat,
   payment: Pick<Payment, "maint" | "corp"> | undefined,
   withCorp: boolean,
+  allFlats?: readonly Flat[],
+  isBlocks = false,
 ): FlatDues {
-  const due = maintOf(month, flat);
+  const due = maintOf(month, flat, allFlats, isBlocks);
   const cdue = withCorp ? corpOf(flat, month) : 0;
   const paid = +(payment?.maint ?? 0) || 0;
   const cpaid = withCorp ? +(payment?.corp ?? 0) || 0 : 0;
@@ -64,6 +66,7 @@ export function monthTotals(
   flats: Flat[],
   payments: Payment[],
   withCorp: boolean,
+  isBlocks = false,
 ) {
   const byFlat = new Map(
     payments.filter((p) => p.month === month?.month).map((p) => [p.flat, p]),
@@ -73,7 +76,14 @@ export function monthTotals(
     unpaidFlats = 0;
   if (month)
     for (const f of flats) {
-      const d = flatDues(month, f, byFlat.get(f.flat), withCorp);
+      const d = flatDues(
+        month,
+        f,
+        byFlat.get(f.flat),
+        withCorp,
+        flats,
+        isBlocks,
+      );
       due += d.totalDue;
       paid += d.totalPaid;
       if (d.status === "unpaid") unpaidFlats++;

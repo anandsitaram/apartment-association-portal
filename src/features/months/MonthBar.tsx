@@ -24,7 +24,7 @@ export default function MonthBar({
   const m = data.months.find((x) => x.month === month);
   if (!m) return null;
   const pays = data.payments.filter((p) => p.month === month);
-  const snap = snapshotOf(flats, m, pays);
+  const snap = snapshotOf(flats, m, pays, data.settings.isBlocks === true);
   const due = vsum(snap.due),
     paid = vsum(snap.paid),
     cdue = vsum(snap.cdue),

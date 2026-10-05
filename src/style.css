@@ -202,10 +202,15 @@ button:disabled {
   cursor: default;
 }
 .erow input:first-child {
-  flex: 1;
+  flex: 1 1 180px;
+  min-width: 120px;
 }
 .erow input:nth-child(2) {
   width: 120px;
+}
+.erow select {
+  min-width: 125px;
+  max-width: 170px;
 }
 .opt {
   display: flex;

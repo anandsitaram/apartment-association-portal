@@ -141,7 +141,7 @@ export async function snapshot(me: Actor | null, screen = "", month = "") {
       ? sql.query("SELECT month, data FROM month_archive ORDER BY month")
       : Promise.resolve([]),
     sql.query(
-      "SELECT flat, sl, name, type, bua, uds, phone, email, excluded, corp_excluded FROM flats ORDER BY sl, flat",
+      "SELECT flat, sl, name, type, bua, uds, block, phone, email, excluded, corp_excluded FROM flats ORDER BY sl, flat",
     ),
     staff && includeCorpusLedger
       ? sql.query(

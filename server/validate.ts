@@ -44,9 +44,23 @@ export function monthBody(b: Body) {
   const expenses: Expense[] = b.expenses.map((e: any) => {
     if (!e || typeof e !== "object" || !num(e.amount ?? 0, 0, 1e9))
       fail(400, "Each expense needs a description and a numeric amount");
+    const allocationScope =
+      e.allocationScope == null ? "association" : String(e.allocationScope);
+    if (!["association", "block"].includes(allocationScope))
+      fail(
+        400,
+        "Expense allocation must be association-wide or block-specific",
+      );
+    const block = String(e.block ?? "")
+      .trim()
+      .slice(0, 40);
+    if (allocationScope === "block" && !block)
+      fail(400, "Select a block for block-specific expenses");
     return {
       description: String(e.description ?? "").slice(0, 60),
       amount: +(e.amount ?? 0),
+      allocationScope: allocationScope as "association" | "block",
+      block: allocationScope === "block" ? block : null,
     };
   });
   const method: Method = b.method ?? "divide";
@@ -190,8 +204,11 @@ export function flatBody(b: Body) {
     !(email.length <= 80 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
   )
     fail(400, "Enter a valid e-mail address");
+  const block =
+    b.block == null ? undefined : String(b.block).trim().slice(0, 40);
   return {
     flat,
+    block,
     sl,
     name: String(b.name ?? "")
       .trim()

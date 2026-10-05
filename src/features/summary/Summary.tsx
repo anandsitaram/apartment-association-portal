@@ -153,6 +153,16 @@ export default function Summary({
         No months yet. Log in as admin and add one with the + tab.
       </p>
     );
+  const latestMonth = data.months.at(-1);
+  const blockExpenseRows = (latestMonth?.expenses || []).filter(
+    (expense) =>
+      expense.allocationScope === "block" && String(expense.block || "").trim(),
+  );
+  const blockReportNames = Array.from(
+    new Set(
+      flats.map((flat) => String(flat.block || "").trim()).filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
   type SRow = (typeof rows)[number];
   const T = (fn: (r: SRow) => number) => n2(sum(rows, fn));
   // Names are shown to admins only. Hidden / renamed columns come from the admin's column settings.
@@ -185,6 +195,62 @@ export default function Summary({
   };
   return (
     <>
+      {settings.isBlocks === true && latestMonth && (
+        <div
+          className="card settings-section-card"
+          style={{ marginBottom: 16 }}
+        >
+          <h3>Block allocation report — {label(latestMonth.month)}</h3>
+          <p className="muted">
+            Expense allocation for the latest month. Association-wide expenses
+            are shared across the association; block-specific expenses are
+            allocated only within the selected block.
+          </p>
+          <div className="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Allocation</th>
+                  <th>Flats</th>
+                  <th className="r">Expense amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Association-wide</td>
+                  <td>{flats.length}</td>
+                  <td className="r">
+                    {n2(
+                      (latestMonth.expenses || [])
+                        .filter((e) => e.allocationScope !== "block")
+                        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+                    )}
+                  </td>
+                </tr>
+                {blockReportNames.map((block) => (
+                  <tr key={block}>
+                    <td>Block {block}</td>
+                    <td>
+                      {
+                        flats.filter(
+                          (flat) => String(flat.block || "").trim() === block,
+                        ).length
+                      }
+                    </td>
+                    <td className="r">
+                      {n2(
+                        blockExpenseRows
+                          .filter((e) => String(e.block || "").trim() === block)
+                          .reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <div className="row titlebar">
         <h2>
           MAINTENANCE PAYMENT SUMMARY –{" "}

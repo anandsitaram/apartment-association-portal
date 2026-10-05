@@ -4,7 +4,7 @@ import type { Query, Row } from "./types";
 import { decryptData, encryptData } from "./crypto.js";
 import { protectBackup } from "./backup.js";
 
-export const SCHEMA_VERSION = 29;
+export const SCHEMA_VERSION = 30;
 export const APP_TABLES = [
   "months",
   "month_archive",
@@ -193,6 +193,21 @@ export async function ensureSchema(
   await q(
     `ALTER TABLE months ADD COLUMN IF NOT EXISTS notes jsonb NOT NULL DEFAULT '{}'::jsonb`,
   );
+  // Block allocation is opt-in. Legacy expense lines default to association-wide.
+  await q(
+    `UPDATE months AS m
+     SET expenses = COALESCE((
+       SELECT jsonb_agg(
+         CASE WHEN jsonb_typeof(item) = 'object'
+           THEN item || jsonb_build_object('allocationScope', COALESCE(NULLIF(item->>'allocationScope',''), 'association'))
+           ELSE item
+         END ORDER BY ordinality
+       )
+       FROM jsonb_array_elements(COALESCE(m.expenses, '[]'::jsonb)) WITH ORDINALITY AS e(item, ordinality)
+     ), '[]'::jsonb)
+     WHERE jsonb_typeof(COALESCE(m.expenses, '[]'::jsonb)) = 'array'
+       AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(m.expenses, '[]'::jsonb)) AS x(item) WHERE jsonb_typeof(item) = 'object' AND NOT (item ? 'allocationScope'))`,
+  );
   await q(
     `CREATE TABLE IF NOT EXISTS month_archive(month text PRIMARY KEY, data jsonb NOT NULL, deleted_at timestamptz DEFAULT now())`,
   );
@@ -216,7 +231,10 @@ export async function ensureSchema(
     `CREATE TABLE IF NOT EXISTS settings(key text PRIMARY KEY, value jsonb)`,
   );
   await q(
-    `CREATE TABLE IF NOT EXISTS flats(flat text PRIMARY KEY, sl int NOT NULL DEFAULT 0, name text NOT NULL DEFAULT '', type text NOT NULL DEFAULT '', bua double precision NOT NULL DEFAULT 0, uds double precision NOT NULL DEFAULT 0)`,
+    `CREATE TABLE IF NOT EXISTS flats(flat text PRIMARY KEY, sl int NOT NULL DEFAULT 0, name text NOT NULL DEFAULT '', type text NOT NULL DEFAULT '', bua double precision NOT NULL DEFAULT 0, uds double precision NOT NULL DEFAULT 0, block text NOT NULL DEFAULT '')`,
+  );
+  await q(
+    `ALTER TABLE flats ADD COLUMN IF NOT EXISTS block text NOT NULL DEFAULT ''`,
   );
   await q(
     `ALTER TABLE flats ADD COLUMN IF NOT EXISTS phone text NOT NULL DEFAULT ''`,

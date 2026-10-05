@@ -239,6 +239,45 @@ describe("visitor access security", () => {
 });
 
 describe("months and Corp Fund rate", () => {
+  it("persists optional block allocation metadata on expense lines", async () => {
+    const monthKey = "2030-09";
+    await post({
+      action: "saveMonth",
+      month: monthKey,
+      create: true,
+      expenses: [
+        { description: "Shared security", amount: 5000 },
+        {
+          description: "Tower A lift",
+          amount: 1200,
+          allocationScope: "block",
+          block: "Tower A",
+        },
+      ],
+      method: "divide",
+      value: 28,
+      rounding: "none",
+      corpApplicable: false,
+    });
+    const saved = (await get()).body.months.find(
+      (m: any) => m.month === monthKey,
+    );
+    expect(saved.expenses).toMatchObject([
+      {
+        description: "Shared security",
+        amount: 5000,
+        allocationScope: "association",
+        block: null,
+      },
+      {
+        description: "Tower A lift",
+        amount: 1200,
+        allocationScope: "block",
+        block: "Tower A",
+      },
+    ]);
+  });
+
   it("persists the current expense total after explicit recalculation when the old basis is zero", async () => {
     const monthKey = "2030-10";
     await post({
@@ -476,6 +515,7 @@ describe("flats", () => {
       type: "N-1BHK",
       bua: 800,
       uds: 250,
+      block: "Tower A",
     };
     expect((await post(f)).body.ok).toBe(true);
     expect((await post(f)).code).toBe(400); // duplicate on create
@@ -484,7 +524,12 @@ describe("flats", () => {
         .ok,
     ).toBe(true);
     const row = (await get()).body.flats.find((x) => x.flat === "999-1BHK");
-    expect(row).toMatchObject({ name: "Renamed", bua: 810.5, sl: 29 });
+    expect(row).toMatchObject({
+      name: "Renamed",
+      bua: 810.5,
+      sl: 29,
+      block: "Tower A",
+    });
     for (const bad of [
       { flat: "" },
       { flat: "bad;drop" },

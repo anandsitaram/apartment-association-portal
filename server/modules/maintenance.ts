@@ -458,13 +458,22 @@ export const actions: Record<string, Action> = {
       if (m.notes?.completion)
         fail(409, "Undo Complete before deleting this month.");
       const flats = await sql.query(
-        "SELECT flat, bua, corp_excluded FROM flats ORDER BY sl, flat",
+        "SELECT flat, bua, block, corp_excluded FROM flats ORDER BY sl, flat",
       );
       const payments = await sql.query(
         "SELECT month, flat, maint, corp FROM payments WHERE month=$1",
         [month],
       );
-      const snap = snapshotOf(month, m, flats, payments);
+      const [billingSettings] = await sql.query(
+        "SELECT value FROM settings WHERE key='columns' LIMIT 1",
+      );
+      const snap = snapshotOf(
+        month,
+        m,
+        flats,
+        payments,
+        billingSettings?.value?.isBlocks === true,
+      );
       const data = JSON.stringify(snap);
       const archived = Boolean(flats.length);
 
@@ -509,7 +518,7 @@ export const actions: Record<string, Action> = {
         nextMonth,
       ]);
       const flats = await sql.query(
-        "SELECT flat, bua, excluded, corp_excluded FROM flats ORDER BY sl, flat",
+        "SELECT flat, bua, block, excluded, corp_excluded FROM flats ORDER BY sl, flat",
       );
       const sourcePayments = await sql.query(
         "SELECT flat, maint, corp FROM payments WHERE month=$1",
@@ -518,7 +527,16 @@ export const actions: Record<string, Action> = {
       const paymentByFlat: Record<string, Row> = Object.fromEntries(
         sourcePayments.map((p) => [String(p.flat), p]),
       );
-      const snap = snapshotOf(month, source, flats, sourcePayments);
+      const [billingSettings] = await sql.query(
+        "SELECT value FROM settings WHERE key='columns' LIMIT 1",
+      );
+      const snap = snapshotOf(
+        month,
+        source,
+        flats,
+        sourcePayments,
+        billingSettings?.value?.isBlocks === true,
+      );
       const carryRows: Record<
         string,
         { maintenance: number; corp: number; combined: boolean }
@@ -901,6 +919,8 @@ export const actions: Record<string, Action> = {
           const type = String(r.type ?? "")
             .trim()
             .slice(0, 30);
+          const block =
+            r.block == null ? undefined : String(r.block).trim().slice(0, 40);
           const buaText = String(r.bua ?? "").trim();
           const udsText = String(r.uds ?? "").trim();
           const phoneText = String(r.phone ?? "").trim();
@@ -922,7 +942,7 @@ export const actions: Record<string, Action> = {
           )
             throw new Error("Enter a valid e-mail address");
           const [existing] = await sql.query(
-            "SELECT flat, sl, name, type, bua, uds, phone, email, excluded, corp_excluded FROM flats WHERE flat=$1",
+            "SELECT flat, sl, name, type, bua, uds, block, phone, email, excluded, corp_excluded FROM flats WHERE flat=$1",
             [flat],
           );
           if (mode === "create") {
@@ -966,7 +986,7 @@ export const actions: Record<string, Action> = {
               "SELECT COALESCE(MAX(sl),0)+1 AS nextsl FROM flats",
             );
             await sql.query(
-              "INSERT INTO flats(flat,sl,name,type,bua,uds,phone,email,excluded,corp_excluded) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+              "INSERT INTO flats(flat,sl,name,type,bua,uds,block,phone,email,excluded,corp_excluded) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
               [
                 flat,
                 Number(nextsl),
@@ -974,6 +994,7 @@ export const actions: Record<string, Action> = {
                 type,
                 Number(buaText),
                 udsText ? Number(udsText) : 0,
+                block ?? "",
                 phoneText ? encryptData(phoneText) : "",
                 emailText ? encryptData(emailText) : "",
                 excluded ?? false,
@@ -1017,7 +1038,7 @@ export const actions: Record<string, Action> = {
           const nextBua = buaText ? Number(buaText) : Number(existing.bua);
           const nextUds = udsText ? Number(udsText) : Number(existing.uds);
           await sql.query(
-            "UPDATE flats SET name=$2, type=$3, bua=$4, uds=$5, phone=CASE WHEN $6::text IS NULL THEN phone ELSE $6 END, email=CASE WHEN $7::text IS NULL THEN email ELSE $7 END, excluded=COALESCE($8::boolean,excluded), corp_excluded=COALESCE($9::boolean,corp_excluded) WHERE flat=$1",
+            "UPDATE flats SET name=$2, type=$3, bua=$4, uds=$5, phone=CASE WHEN $6::text IS NULL THEN phone ELSE $6 END, email=CASE WHEN $7::text IS NULL THEN email ELSE $7 END, excluded=COALESCE($8::boolean,excluded), corp_excluded=COALESCE($9::boolean,corp_excluded), block=CASE WHEN $10::text IS NULL THEN block ELSE $10 END WHERE flat=$1",
             [
               flat,
               nextName,
@@ -1028,6 +1049,7 @@ export const actions: Record<string, Action> = {
               emailText ? encryptData(emailText) : null,
               excluded ?? null,
               corpExcluded ?? null,
+              block ?? null,
             ],
           );
           await syncExclusions(flat, excluded, corpExcluded);
@@ -1077,14 +1099,14 @@ export const actions: Record<string, Action> = {
         }
       }
       const [before] = await sql.query(
-        "SELECT excluded, corp_excluded FROM flats WHERE flat=$1",
+        "SELECT excluded, corp_excluded, block FROM flats WHERE flat=$1",
         [f.flat],
       );
       const encPhone = f.phone ? encryptData(f.phone) : null;
       const encEmail = f.email ? encryptData(f.email) : null;
       await sql.query(
-        `INSERT INTO flats(flat,sl,name,type,bua,uds,phone,email,excluded,corp_excluded) VALUES($1,$2,$3,$4,$5,$6,COALESCE($7::text,''),COALESCE($8::text,''),$9,COALESCE($10::boolean,false))
-         ON CONFLICT(flat) DO UPDATE SET sl=$2, name=$3, type=$4, bua=$5, uds=$6, phone=COALESCE($7::text, flats.phone), email=COALESCE($8::text, flats.email), excluded=$9, corp_excluded=COALESCE($10::boolean, flats.corp_excluded)`,
+        `INSERT INTO flats(flat,sl,name,type,bua,uds,phone,email,excluded,corp_excluded,block) VALUES($1,$2,$3,$4,$5,$6,COALESCE($7::text,''),COALESCE($8::text,''),$9,COALESCE($10::boolean,false),COALESCE($11::text,''))
+         ON CONFLICT(flat) DO UPDATE SET sl=$2, name=$3, type=$4, bua=$5, uds=$6, phone=COALESCE($7::text, flats.phone), email=COALESCE($8::text, flats.email), excluded=$9, corp_excluded=COALESCE($10::boolean, flats.corp_excluded), block=COALESCE($11::text, flats.block)`,
         [
           f.flat,
           f.sl,
@@ -1096,6 +1118,7 @@ export const actions: Record<string, Action> = {
           encEmail,
           f.excluded,
           f.corpExcluded ?? null,
+          f.block ?? null,
         ],
       );
       const wasMaint = !!before?.excluded,

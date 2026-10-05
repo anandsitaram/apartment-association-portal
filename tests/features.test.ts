@@ -88,6 +88,10 @@ describe("input validation", () => {
       { month: undefined },
       { expenses: "nope" },
       { expenses: [{ description: "x", amount: "abc" }] },
+      {
+        expenses: [{ description: "x", amount: 1, allocationScope: "unknown" }],
+      },
+      { expenses: [{ description: "x", amount: 1, allocationScope: "block" }] },
       { expenses: Array(31).fill({ description: "x", amount: 1 }) },
       { method: "magic" },
       { rounding: "sideways" },

@@ -13,6 +13,7 @@ type ColKey =
   | "type"
   | "bua"
   | "uds"
+  | "block"
   | "phone"
   | "email"
   | "maintExcluded"
@@ -24,6 +25,7 @@ const COLS: [ColKey, string, string | undefined, string][] = [
   ["type", "Apt Type", "text", "c-type"],
   ["bua", "Sq Ft", "number", "c-num r"],
   ["uds", "UDS", "number", "c-num r"],
+  ["block", "Block", "text", "c-type"],
   ["phone", "Phone", "tel", "c-phone"],
   ["email", "E-mail", "email", "c-email"],
   ["maintExcluded", "Maint. excluded", undefined, "c-incl"],
@@ -36,6 +38,7 @@ const COL_WIDTHS: Record<ColKey | "act", number> = {
   type: 115,
   bua: 105,
   uds: 105,
+  block: 105,
   phone: 150,
   email: 240,
   maintExcluded: 105,
@@ -55,6 +58,7 @@ interface FlatDraft {
   type: string;
   bua: string;
   uds: string;
+  block: string;
   phone: string;
   email: string;
   excluded: boolean;
@@ -84,6 +88,7 @@ function FlatRow({
     type: f.type || "",
     bua: String(f.bua),
     uds: String(f.uds),
+    block: f.block || "",
     phone: f.phone || "",
     email: f.email || "",
     excluded: !!f.excluded,
@@ -192,6 +197,7 @@ export default function Flats({
       uds: f.uds,
       phone: f.phone,
       email: f.email,
+      block: f.block || "",
       excluded: f.excluded,
       corpExcluded: f.corpExcluded,
     });
@@ -226,11 +232,14 @@ export default function Flats({
     uds: "0",
     phone: "",
     email: "",
+    block: "",
   });
 
   const hidden = new Set(settings.flatHidden || []);
   const visibleKeys = COLS.map(([k]) => k).filter(
-    (k) => k === "flat" || !hidden.has(k),
+    (k) =>
+      (k === "flat" || !hidden.has(k)) &&
+      (k !== "block" || settings.isBlocks === true),
   );
   const totalFlats = Number(settings.totalFlats || 0);
   const canAddFlat = !totalFlats || flats.length < totalFlats;
@@ -247,6 +256,7 @@ export default function Flats({
       uds: newFlat.uds || "0",
       phone: newFlat.phone.trim(),
       email: newFlat.email.trim(),
+      block: newFlat.block.trim(),
       excluded: false,
       corpExcluded: false,
     });
@@ -259,6 +269,7 @@ export default function Flats({
         uds: "0",
         phone: "",
         email: "",
+        block: "",
       });
       setShowAdd(false);
     }
@@ -369,6 +380,19 @@ export default function Flats({
                 }
               />
             </label>
+            {settings.isBlocks === true && (
+              <label>
+                Block / Building (optional)
+                <input
+                  value={newFlat.block}
+                  onChange={(e) =>
+                    setNewFlat({ ...newFlat, block: e.target.value })
+                  }
+                  maxLength={40}
+                  placeholder="e.g. A or Tower 1"
+                />
+              </label>
+            )}
             <label>
               Phone
               <input
@@ -448,6 +472,7 @@ export default function Flats({
                   f.uds,
                   f.phone,
                   f.email,
+                  f.block,
                 ].join("|")}
                 f={f}
                 onSave={save}
@@ -491,7 +516,9 @@ export default function Flats({
         visible to admins. Tick "Maint. excluded" or "Corp Fund excluded" to
         leave a flat out of that calculation. Saving applies it to the latest
         month and to every month you add afterwards; earlier months keep their
-        own selection (change a specific month on the Months tab).
+        own selection (change a specific month on the Months tab). Use Block /
+        Building for multi-block associations; leave it blank for
+        single-building communities.
       </p>
     </>
   );

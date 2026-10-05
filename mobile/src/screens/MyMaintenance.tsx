@@ -16,10 +16,10 @@ export default function MyMaintenance({ data, flat }: ScreenProps) {
       .slice(-range)
       .map((m) => {
         const p = data.payments.find((x) => x.month === m.month && x.flat === mine.flat);
-        return { m, p, d: flatDues(m, mine, p, false) };
+        return { m, p, d: flatDues(m, mine, p, false, data.flats, data.settings.isBlocks === true) };
       })
       .reverse();
-  }, [data.months, data.payments, mine, range]);
+  }, [data.months, data.payments, data.flats, mine, range]);
 
   if (!flat) return <EmptyState text="No flat is linked to your login. Ask the MC to link it to see your maintenance record." />;
   const due = rows.reduce((a, r) => a + r.d.totalDue, 0);

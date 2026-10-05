@@ -51,7 +51,7 @@ export default function Months({
   const [expandedCarry, setExpandedCarry] = useState(false);
   const [receiptFlat, setReceiptFlat] = useState<{ flat: Flat; dues: FlatDues; payment?: Payment } | null>(null);
   const [expenseDraft, setExpenseDraft] = useState<Expense[]>(
-    (month?.expenses || []).map((e) => ({ description: e.description || '', amount: Number(e.amount) || 0 })),
+    (month?.expenses || []).map((e) => ({ ...e, description: e.description || '', amount: Number(e.amount) || 0 })),
   );
   const [savingExpenses, setSavingExpenses] = useState(false);
   const [exportingMonth, setExportingMonth] = useState(false);
@@ -63,7 +63,7 @@ export default function Months({
 
   useEffect(() => {
     setEditingCalculation(false);
-    setExpenseDraft((month?.expenses || []).map((e) => ({ description: e.description || '', amount: Number(e.amount) || 0 })));
+    setExpenseDraft((month?.expenses || []).map((e) => ({ ...e, description: e.description || '', amount: Number(e.amount) || 0 })));
     setCalcMethod(month?.method || 'divide');
     setCalcValue(String(month?.value ?? data.flats.length));
     setCalcRounding(month?.rounding || 'none');
@@ -115,7 +115,7 @@ export default function Months({
         {
           action: 'saveMonth',
           month: month.month,
-          expenses: expenseDraft.map((row) => ({ description: row.description.trim(), amount: Number(row.amount) || 0 })),
+          expenses: expenseDraft.map((row) => ({ ...row, description: row.description.trim(), amount: Number(row.amount) || 0 })),
           method: expectedStage ? calcMethod : month.method || 'divide',
           value: expectedStage
             ? calcMethod === 'divide'
@@ -180,7 +180,7 @@ export default function Months({
   const isCompleted = Boolean(month.notes?.completion);
   const isArchived = Boolean(month.archived);
   const locked = isCompleted || isArchived;
-  const totals = monthTotals(month, data.flats, data.payments, admin);
+  const totals = monthTotals(month, data.flats, data.payments, admin, data.settings.isBlocks === true);
   const billing = billingOf(data.settings, month);
   const isDuePassed = isDueDatePassed(month.month, data.settings.dueDay);
 
@@ -324,7 +324,7 @@ export default function Months({
   };
 
   const rows = data.flats
-    .map((f) => ({ f, d: flatDues(month, f, payments.get(f.flat), admin) }))
+    .map((f) => ({ f, d: flatDues(month, f, payments.get(f.flat), admin, data.flats, data.settings.isBlocks === true) }))
     .filter((r) => filter === 'all' || r.d.status === 'unpaid');
 
   const exportMonthExcel = async () => {
@@ -340,7 +340,7 @@ export default function Months({
         settings: data.settings,
         sheet: monthLabel(month.month),
         corpOf,
-        maintOf,
+        maintOf: (monthArg, flatArg) => maintOf(monthArg, flatArg, data.flats, data.settings.isBlocks === true),
       });
       const safeMonth = month.month.replace(/[^a-zA-Z0-9_-]/g, '_');
       const path = `${RNFS.CachesDirectoryPath}/my-apartment-maintenance-${safeMonth}.xlsx`;
@@ -522,23 +522,7 @@ export default function Months({
                 keyboardType="decimal-pad"
               />
             )}
-            <Text style={s.label}>Maintenance rounding</Text>
-            <View style={s.rowWrap}>
-              <Chip label="2 decimals" active={calcRounding === 'none'} onPress={() => setCalcRounding('none')} />
-              <Chip label="Nearest ₹1" active={calcRounding === 'nearest'} onPress={() => setCalcRounding('nearest')} />
-              <Chip label="Round up ₹1" active={calcRounding === 'up'} onPress={() => setCalcRounding('up')} />
-              <Chip label="Round up ₹50" active={calcRounding === 'up50'} onPress={() => setCalcRounding('up50')} />
-              <Chip label="Round up ₹100" active={calcRounding === 'up100'} onPress={() => setCalcRounding('up100')} />
-            </View>
-            <Text style={s.label}>Merge Maintenance and Corp Fund?</Text>
-            <View style={s.rowWrap}>
-              <Chip label="No — separate" active={!mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(false)} />
-              <Chip label="Yes — combine" active={mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(true)} />
-            </View>
-            <Text style={s.small}>
-              When combined, the selected rounding applies to the total charge. Corp Fund remains internally allocated for accounting.
-            </Text>
-            <Text style={s.label}>Corp Fund</Text>
+            <Text style={s.label}>Corp Fund applicable?</Text>
             <View style={s.rowWrap}>
               <Chip label="Applicable" active={corpApplicable} onPress={() => setCorpApplicable(true)} />
               <Chip label="Not applicable" active={!corpApplicable} onPress={() => setCorpApplicable(false)} />
@@ -556,6 +540,24 @@ export default function Months({
                   onChangeText={setCorpRate}
                   keyboardType="decimal-pad"
                 />
+              </>
+            )}
+            <Text style={s.label}>Merge Maintenance and Corp Fund?</Text>
+            <View style={s.rowWrap}>
+              <Chip label="No — separate" active={!mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(false)} />
+              <Chip label="Yes — combine" active={mergeMaintenanceCorp} onPress={() => setMergeMaintenanceCorp(true)} />
+            </View>
+            <Text style={s.small}>When combined, the Maintenance rounding rule applies to the total charge.</Text>
+            <Text style={s.label}>{mergeMaintenanceCorp ? 'Combined charge rounding' : 'Maintenance rounding'}</Text>
+            <View style={s.rowWrap}>
+              <Chip label="2 decimals" active={calcRounding === 'none'} onPress={() => setCalcRounding('none')} />
+              <Chip label="Nearest ₹1" active={calcRounding === 'nearest'} onPress={() => setCalcRounding('nearest')} />
+              <Chip label="Round up ₹1" active={calcRounding === 'up'} onPress={() => setCalcRounding('up')} />
+              <Chip label="Next ₹50" active={calcRounding === 'up50'} onPress={() => setCalcRounding('up50')} />
+              <Chip label="Next ₹100" active={calcRounding === 'up100'} onPress={() => setCalcRounding('up100')} />
+            </View>
+            {corpApplicable && !mergeMaintenanceCorp && (
+              <>
                 <Text style={s.label}>Corp Fund rounding</Text>
                 <View style={s.rowWrap}>
                   <Chip label="2 decimals" active={corpRounding === 'none'} onPress={() => setCorpRounding('none')} />
@@ -670,6 +672,7 @@ export default function Months({
                 {month.notes?.mergeMaintenanceCorp ? (
                   <Text style={s.small}>
                     Maintenance + Corp Fund Due {inr0(d.totalDue)} (Paid {inr0(d.totalPaid)})
+                    {month.corp_applicable !== false ? ` · Corp Fund amount ${inr0(d.cdue)}` : ''}
                   </Text>
                 ) : (
                   <>
@@ -716,7 +719,7 @@ export default function Months({
           flat={editing}
           monthKey={month.month}
           payment={payments.get(editing.flat)}
-          dues={flatDues(month, editing, payments.get(editing.flat), admin)}
+          dues={flatDues(month, editing, payments.get(editing.flat), admin, data.flats, data.settings.isBlocks === true)}
           merged={month.notes?.mergeMaintenanceCorp === true}
           split={splitOf(data.settings)}
           save={save}

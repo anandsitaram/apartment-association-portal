@@ -15,7 +15,7 @@ export default function FinancialSummary({ data }: ScreenProps) {
     try {
       const rows = [['Month', 'Total billed', 'Collected', 'Outstanding', 'Expenses', 'Pending flats']];
       for (const month of [...visibleMonths].sort((a, b) => a.month.localeCompare(b.month))) {
-        const t = monthTotals(month, data.flats, data.payments, true);
+        const t = monthTotals(month, data.flats, data.payments, true, data.settings.isBlocks === true);
         const expenses = month.expenses.reduce((sum, e) => sum + (+e.amount || 0), 0);
         rows.push([month.month, String(t.due), String(t.paid), String(t.outstanding), String(expenses), String(t.unpaidFlats)]);
       }
@@ -28,7 +28,7 @@ export default function FinancialSummary({ data }: ScreenProps) {
   if (!data.months.length) return <EmptyState text="No financial months are available yet." />;
   const totals = visibleMonths.reduce(
     (acc, month) => {
-      const t = monthTotals(month, data.flats, data.payments, true);
+      const t = monthTotals(month, data.flats, data.payments, true, data.settings.isBlocks === true);
       return {
         due: acc.due + t.due,
         paid: acc.paid + t.paid,
@@ -83,7 +83,7 @@ export default function FinancialSummary({ data }: ScreenProps) {
         {[...visibleMonths]
           .sort((a, b) => b.month.localeCompare(a.month))
           .map((month) => {
-            const t = monthTotals(month, data.flats, data.payments, true);
+            const t = monthTotals(month, data.flats, data.payments, true, data.settings.isBlocks === true);
             const expenseTotal = month.expenses.reduce((sum, e) => sum + (+e.amount || 0), 0);
             return (
               <View key={month.month} style={[s.listRow, { gap: 5 }]}>
