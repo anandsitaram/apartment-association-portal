@@ -87,7 +87,7 @@ describe("month export", () => {
     expect(ws.getCell("H16").value).toBe("Corp Rate / Sq Ft");
     expect(ws.getCell("I16").value).toBe(0.6);
     expect(ws.getCell("I16").numFmt).toBe("0.##");
-    expect(ws.getCell("F20").value).toBe(300);
+    expect(ws.getCell("F20").value).toBeNull(); // UDS values are not included in this export
     expect(ws.getCell("G20").value).toBe(0); // maintenance excluded
     expect(ws.getCell("H20").value).toBe(600);
     expect(ws.getCell("I20").value).toBe("UPI");

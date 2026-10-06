@@ -12,7 +12,7 @@ const FLAGS = [
   "REMINDERS",
   "AUTO_BACKUP",
 ];
-let handler: any, runDaily: any, admin: any;
+let handler: any, runDaily: any, admin: any, superToken: any;
 
 async function call(
   method: string,
@@ -56,7 +56,7 @@ beforeAll(async () => {
   ({ runDaily } = await import("../server/jobs.js"));
   // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create the
   // "admin" account these tests run as, the same way a real deployment would.
-  const superToken = (await login("super-admin", "adminpw1")).body.token;
+  superToken = (await login("super-admin", "adminpw1")).body.token;
   await call(
     "POST",
     {
@@ -79,7 +79,12 @@ afterEach(() => {
 
 describe("input validation", () => {
   it("rejects malformed months, expenses, payments", async () => {
-    const ok = { action: "saveMonth", month: "2026-09", expenses: exp };
+    const ok = {
+      action: "saveMonth",
+      month: "2026-09",
+      create: true,
+      expenses: exp,
+    };
     expect((await post(ok)).body.ok).toBe(true);
     for (const bad of [
       { month: "2026-13" },
@@ -105,7 +110,7 @@ describe("input validation", () => {
     const pay = {
       action: "savePayment",
       month: "2026-09",
-      flat: "101-3BHK",
+      flat: "A-101",
       maint: 10,
       corp: 5,
       mode: "UPI",
@@ -176,12 +181,19 @@ describe("login rate limit", () => {
 });
 
 describe("audit log", () => {
-  it("records nothing while off, then who changed what once on (super admin only), on by default otherwise", async () => {
+  it("records nothing while off, then records who changed what once on", async () => {
     process.env.AUDIT_LOG = "false";
+    const month = "2035-11";
+    await post({
+      action: "saveMonth",
+      month,
+      create: true,
+      expenses: exp,
+    });
     const pay = {
       action: "savePayment",
-      month: "2026-09",
-      flat: "102-2BHK",
+      month,
+      flat: "A-102",
       maint: 60,
       corp: 400,
       mode: "UPI",
@@ -191,7 +203,7 @@ describe("audit log", () => {
     const before = (await post({ action: "listAudit" })).body.entries.length; // earlier tests may have logged, with the default-on flag
     process.env.AUDIT_LOG = "true";
     await post({ ...pay, maint: 75 });
-    await post({ action: "saveCorpRate", month: "2026-09", rate: 0.6 });
+    await post({ action: "saveCorpRate", month, rate: 0.6 });
     const { entries } = (await post({ action: "listAudit" })).body;
     expect(entries).toHaveLength(before + 2); // the payment made while AUDIT_LOG was off left no trace
     expect(entries.slice(0, 2).map((e) => e.action)).toEqual([
@@ -199,14 +211,14 @@ describe("audit log", () => {
       "savePayment",
     ]); // newest first
     expect(entries[1]).toMatchObject({
-      username: "super-admin",
-      target: "2026-09 102-2BHK",
+      username: "admin",
+      target: `${month} A-102`,
     });
     expect(entries[1].detail.changes).toEqual({ maint: [60, 75] });
     expect(entries[0].detail).toEqual({ corpRate: 0.6 });
     process.env.AUDIT_LOG = "false"; // restore for tests earlier in file order that assume it off (module reset per file, but harmless)
   });
-  it("only super admins can read it", async () => {
+  it("admins can read the audit log", async () => {
     await post({
       action: "saveUser",
       username: "helper",
@@ -214,7 +226,11 @@ describe("audit log", () => {
       role: "admin",
     });
     const t = (await login("helper", "helper123")).body.token;
-    expect((await post({ action: "listAudit" }, t)).code).toBe(403);
+    const response = await post({ action: "listAudit" }, t);
+    expect(response.code).toBe(200);
+    expect(response.body.entries.some((entry) => entry.username === "admin")).toBe(
+      true,
+    );
   });
 });
 
@@ -249,6 +265,7 @@ describe("flat contact details", () => {
       username: "contactviewer",
       password: "viewer1234",
       role: "user",
+      flat: "555-1BHK",
     });
     const viewerToken = (await login("contactviewer", "viewer1234")).body.token;
     const asViewer = (await get(viewerToken)).body.flats.find(
@@ -314,10 +331,13 @@ describe("security", () => {
       password: "deletepw1",
       role: "user",
     });
-    await post({
-      action: "saveSettings",
-      settings: { allowAdminUserDeletion: false },
-    });
+    await post(
+      {
+        action: "saveSettings",
+        settings: { allowAdminUserDeletion: false },
+      },
+      superToken,
+    );
 
     const adminToken = (await login("delete-admin", "deletepw1")).body.token;
     expect(
@@ -329,10 +349,13 @@ describe("security", () => {
       ).code,
     ).toBe(403);
 
-    await post({
-      action: "saveSettings",
-      settings: { allowAdminUserDeletion: true },
-    });
+    await post(
+      {
+        action: "saveSettings",
+        settings: { allowAdminUserDeletion: true },
+      },
+      superToken,
+    );
     expect(
       (
         await post(
@@ -351,7 +374,7 @@ describe("viewer view", () => {
       username: "flat101",
       password: "viewer1234",
       role: "user",
-      flat: "101-3BHK",
+      flat: "A-101",
     });
     expect(
       (
@@ -374,7 +397,12 @@ describe("viewer view", () => {
       date: "2026-09-01",
     });
     // a deleted month is frozen into the archive (calculated on the server)
-    await post({ action: "saveMonth", month: "2026-08", expenses: exp });
+    await post({
+      action: "saveMonth",
+      month: "2026-08",
+      create: true,
+      expenses: exp,
+    });
     await post({ action: "deleteMonth", month: "2026-08" });
     const t = (await login("flat101", "viewer1234")).body.token;
 
@@ -382,21 +410,20 @@ describe("viewer view", () => {
     process.env.VIEWER_VIEW = "false";
     process.env.OWNER_VIEW = "false";
     let r = (await get(t)).body;
-    expect(r.flats.length).toBeGreaterThan(20);
-    expect(r.flats.every((f) => f.name === "")).toBe(true);
-    expect(r.residentOnly).toBe(false);
+    expect(r.flats.map((f) => f.flat)).toEqual(["A-101"]);
+    expect(r.residentOnly).toBe(true);
 
     delete process.env.OWNER_VIEW;
     process.env.VIEWER_VIEW = "true";
     r = (await get(t)).body;
     expect(r.residentOnly).toBe(true);
-    expect(r.mine).toBe("101-3BHK");
-    expect(r.flats.map((f) => f.flat)).toEqual(["101-3BHK"]);
-    expect(r.flats[0].name).toBe("Dr M V Reddy"); // their own name
+    expect(r.mine).toBe("A-101");
+    expect(r.flats.map((f) => f.flat)).toEqual(["A-101"]);
+    expect(r.flats[0].name).toBe("");
     expect(r.flats[0]).not.toHaveProperty("phone");
-    expect(r.payments.every((p) => p.flat === "101-3BHK")).toBe(true);
+    expect(r.payments.every((p) => p.flat === "A-101")).toBe(true);
     expect(r.payments.length).toBeGreaterThan(0);
-    expect(Object.keys(r.archive[0].data.due)).toEqual(["101-3BHK"]);
+    expect(Object.keys(r.archive[0].data.due)).toEqual(["A-101"]);
     // an admin is not restricted
     expect((await get(admin)).body.flats.length).toBeGreaterThan(20);
   });
@@ -418,10 +445,10 @@ describe("viewer view", () => {
 describe("reminders by e-mail", () => {
   const items = [
     { flat: "555-1BHK", subject: "Maintenance reminder", text: "Please pay." },
-    { flat: "101-3BHK", subject: "Maintenance reminder", text: "Please pay." },
+    { flat: "A-101", subject: "Maintenance reminder", text: "Please pay." },
   ];
   it("is refused while the flag is off or mail is not configured", async () => {
-    expect((await post({ action: "sendReminders", items })).code).toBe(400);
+    expect((await post({ action: "sendReminders", items })).code).toBe(403);
     process.env.REMINDERS = "true";
     const r = await post({ action: "sendReminders", items });
     expect(r.code).toBe(400);
@@ -436,7 +463,7 @@ describe("reminders by e-mail", () => {
     const r = (await post({ action: "sendReminders", items })).body;
     expect(r.sent).toBe(1);
     expect(r.skipped).toEqual([
-      { flat: "101-3BHK", reason: "no e-mail address" },
+      { flat: "A-101", reason: "no e-mail address" },
     ]);
     const [url, opts] = fetchMock.mock.calls[0] as any[];
     expect(url).toBe("https://api.resend.com/emails");
@@ -450,39 +477,46 @@ describe("reminders by e-mail", () => {
 
 describe("backups", () => {
   it("super admin can download a backup (no password hashes)", async () => {
-    const { backup } = (await post({ action: "backup" })).body;
-    expect(backup.app).toBe("my-apartment");
-    expect(Object.keys(backup.tables).sort()).toEqual([
-      "corpus_ledger",
-      "flats",
-      "month_archive",
-      "months",
-      "payments",
-      "settings",
-    ]);
-    expect(backup.tables.flats.length).toBeGreaterThan(20);
-    expect(JSON.stringify(backup)).not.toMatch(/scrypt|pass/);
-    expect(backup.tables.settings.some((s) => s.key === "schema_version")).toBe(
-      false,
+    const { backup } = (await post({ action: "backup" }, superToken)).body;
+    const { DATA_TABLES, unprotectBackup } =
+      await import("../server/backup.js");
+    const contents = unprotectBackup(backup);
+    expect(backup.app).toBe("my-apartment-encrypted-backup");
+    expect(Object.keys(contents.tables).sort()).toEqual(
+      [...DATA_TABLES].sort(),
     );
+    expect(contents.tables.flats.length).toBeGreaterThan(20);
+    expect(JSON.stringify(contents)).not.toMatch(/scrypt|pass/);
+    expect(
+      contents.tables.settings.some((s) => s.key === "schema_version"),
+    ).toBe(false);
   });
   it("daily job: always keeps the DB awake; backs up once a day when on; prunes; e-mails on Mondays", async () => {
     expect(await runDaily()).toEqual({
       keepAlive: true,
       backup: false,
       emailed: false,
+      reminders: { sent: 0, flats: 0 },
+      polls: { polls: 0, sent: 0 },
     });
     process.env.AUTO_BACKUP = "true";
     process.env.BACKUP_KEEP = "2";
     const r1 = await runDaily(new Date("2026-09-22T03:00:00Z")); // a Tuesday
     expect(r1).toMatchObject({ backup: true, emailed: false });
     expect((await runDaily()).backup).toBe(false); // already done today
-    const list = (await post({ action: "listBackups" })).body.backups;
+    const list = (await post({ action: "listBackups" }, superToken)).body
+      .backups;
     expect(list).toHaveLength(1);
-    const got = (await post({ action: "getBackup", id: list[0].id })).body
+    const storedBackup = (
+      await post({ action: "getBackup", id: list[0].id }, superToken)
+    ).body
       .backup;
+    const { unprotectBackup } = await import("../server/backup.js");
+    const got = unprotectBackup(storedBackup);
     expect(got.tables.months.length).toBeGreaterThan(0);
-    expect((await post({ action: "getBackup", id: 99999 })).code).toBe(404);
+    expect(
+      (await post({ action: "getBackup", id: 99999 }, superToken)).code,
+    ).toBe(404);
     delete process.env.BACKUP_KEEP;
 
     // Monday + mail configured -> attachment
@@ -498,12 +532,13 @@ describe("backups", () => {
     const sent = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body);
     expect(sent.to).toEqual(["treasurer@example.com"]);
     expect(sent.attachments[0].filename).toMatch(
-      /^my-apartment-backup-2026-09-21\.json$/,
+      /^ma-backup-2026-09-21\.json$/,
     );
-    expect(
-      JSON.parse(Buffer.from(sent.attachments[0].content, "base64").toString())
-        .app,
-    ).toBe("my-apartment");
+    const attachment = JSON.parse(
+      Buffer.from(sent.attachments[0].content, "base64").toString(),
+    );
+    expect(attachment.app).toBe("my-apartment-encrypted-backup");
+    expect(unprotectBackup(attachment).app).toBe("my-apartment");
     // pruning: only the newest BACKUP_KEEP (2) are kept
     expect((await post({ action: "listBackups" })).body.backups).toHaveLength(
       2,

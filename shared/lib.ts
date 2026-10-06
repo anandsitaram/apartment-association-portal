@@ -59,9 +59,9 @@ export const corpChargeOf = (f: FlatCalc, m: MonthCalc | null | undefined) => {
     .toUpperCase();
   const typeSpecific =
     type.includes("2") && type.includes("BHK")
-      ? m.corp_2bhk
+      ? m?.corp_2bhk
       : type.includes("3") && type.includes("BHK")
-        ? m.corp_3bhk
+        ? m?.corp_3bhk
         : null;
   const raw =
     typeSpecific != null

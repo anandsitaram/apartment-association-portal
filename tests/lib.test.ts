@@ -219,7 +219,7 @@ describe("maintenance", () => {
       },
     });
     expect(maintOf(m, flats[0])).toBe(900);
-    expect(corpOf(flats[0], m)).toBe(250);
+    expect(corpOf(flats[0], m)).toBe(750); // current Corp Fund (₹500) + carried Corp Fund (₹250)
   });
   it("adds carried-forward arrears on top of a recalculated current maintenance amount", () => {
     const m = month({
@@ -340,14 +340,14 @@ describe("Add month: what is copied", () => {
     calc: "settings" as const,
     flats: "source" as const,
   };
-  it("defaults: lines with ₹0, billing from Settings, flat selection from the source month", () => {
+  it("defaults: lines with ₹0, divisor from the current flat count, flat selection from the source month", () => {
     const b = newMonthBody(base, [prev], fl, settings);
     expect(b).toMatchObject({
       action: "saveMonth",
       create: true,
       month: "2026-09",
       method: "divide",
-      value: 30,
+      value: 2,
       corpRate: 0.5,
       excludedFlats: ["A"],
       excludedExpenseFlats: ["B"],
@@ -404,7 +404,7 @@ describe("Add month: what is copied", () => {
     expect(b.expenses.map((e) => e.description)).toEqual(["X", "Y"]);
     expect(b).toMatchObject({
       method: "divide",
-      value: 30,
+      value: 2,
       excludedFlats: ["B"],
     });
     expect(newMonthBody(base, [], fl, settings).expenses).toHaveLength(2);

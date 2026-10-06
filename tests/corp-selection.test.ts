@@ -5,7 +5,7 @@ process.env.SEED_FLATS = "true"; // these tests use the sample roster (server/fl
 process.env.DB_DRIVER = "neon"; // replaced by an in-memory Postgres (tests/neon-shim.js)
 process.env.ADMIN_PASSWORD = "adminpw1";
 
-let handler: any, admin: any;
+let handler: any, admin: any, superAdmin: any;
 async function call(method: string, body?: any, token?: any) {
   const out: { code?: number; body?: any } = {};
   const res = {
@@ -37,7 +37,7 @@ beforeAll(async () => {
   handler = (await import("../api/app.js")).default;
   // Only "super-admin" exists out of the box (via ADMIN_PASSWORD); create the
   // "admin" account these tests run as, the same way a real deployment would.
-  const superToken = (
+  superAdmin = (
     await call("POST", {
       action: "login",
       username: "super-admin",
@@ -52,7 +52,7 @@ beforeAll(async () => {
       password: "adminpw1",
       role: "admin",
     },
-    superToken,
+    superAdmin,
   );
   admin = (
     await call("POST", {
@@ -94,12 +94,15 @@ describe("Corp Fund eligibility", () => {
   });
 
   it("a month keeps its own Corp Fund list: saved with the month, kept by a later save that does not send it", async () => {
-    await post({
+    const saved = await post({
       action: "saveMonth",
       month: "2026-11",
+      create: true,
       expenses: exp,
+      corpApplicable: true,
       excludedCorpFlats: ["T-1"],
     });
+    expect(saved.code, JSON.stringify(saved.body)).toBe(200);
     expect(
       (await get()).body.months.find((m) => m.month === "2026-11")
         .excluded_corp_flats,
@@ -125,7 +128,7 @@ describe("Corp Fund eligibility", () => {
     await post({ action: "deleteMonth", month: "2026-11" });
     const a = (await get()).body.archive.find((x) => x.month === "2026-11");
     expect(a.data.cdue["T-1"]).toBe(0);
-    expect(a.data.cdue["101-3BHK"]).toBe(853); // 0.5 x 1706.26
+    expect(a.data.cdue["A-101"]).toBe(853); // 0.5 x 1706.26
   });
 });
 
@@ -147,10 +150,11 @@ describe("Add month", () => {
       expenses: [{ description: "Other", amount: 5 }],
       create: true,
     });
-    expect(again.code).toBe(409);
+    expect(again.code).toBe(200);
+    expect(again.body.alreadyExists).toBe(true);
     expect(
       (await get()).body.months.find((m) => m.month === "2020-01").expenses,
-    ).toEqual(exp);
+    ).toMatchObject(exp);
     expect(
       (
         await post({
@@ -165,8 +169,18 @@ describe("Add month", () => {
 
 describe("Flats page switches", () => {
   it("apply to the latest month (and only that one); un-ticking removes the flat again", async () => {
-    await post({ action: "saveMonth", month: "2027-01", expenses: exp });
-    await post({ action: "saveMonth", month: "2027-02", expenses: exp });
+    await post({
+      action: "saveMonth",
+      month: "2027-01",
+      create: true,
+      expenses: exp,
+    });
+    await post({
+      action: "saveMonth",
+      month: "2027-02",
+      create: true,
+      expenses: exp,
+    });
     const f = {
       action: "saveFlat",
       create: false,
@@ -323,6 +337,7 @@ describe("schema upgrade", () => {
     await post({
       action: "saveMonth",
       month: "2026-12",
+      create: true,
       expenses: exp,
       excludedFlats: [],
     }); // admin chose "select all"
@@ -349,10 +364,11 @@ describe("schema upgrade", () => {
     await post({
       action: "saveMonth",
       month: "2099-01",
+      create: true,
       expenses: exp,
-      excludedFlats: ["101-3BHK"],
-      excludedExpenseFlats: ["102-2BHK"],
-      excludedCorpFlats: ["103-2BHK"],
+      excludedFlats: ["A-101"],
+      excludedExpenseFlats: ["A-102"],
+      excludedCorpFlats: ["A-103"],
     });
     await sql.query("UPDATE flats SET excluded=false, corp_excluded=false");
     await sql.query(
@@ -362,14 +378,14 @@ describe("schema upgrade", () => {
     const f = Object.fromEntries(
       (await get()).body.flats.map((x) => [x.flat, x]),
     );
-    expect(f["101-3BHK"].excluded).toBe(true);
-    expect(f["102-2BHK"].excluded).toBe(true); // the old separate "expense" list counts as maintenance-excluded too
-    expect(f["103-2BHK"].corp_excluded).toBe(true);
-    expect(f["104-2BHK"].excluded).toBe(false);
+    expect(f["A-101"].excluded).toBe(true);
+    expect(f["A-102"].excluded).toBe(true); // the old separate "expense" list counts as maintenance-excluded too
+    expect(f["A-103"].corp_excluded).toBe(true);
+    expect(f["A-104"].excluded).toBe(false);
     // an existing installation keeps the name it has always shown
     expect((await get()).body.settings).toMatchObject({
-      orgName: "RV Fallon Owners Association",
-      orgShort: "RV Fallon",
+      orgName: "My Apartment",
+      orgShort: "MA",
     });
     expect(
       (
@@ -384,13 +400,14 @@ describe("Corp Fund figures are visible to viewers; the ledger is not", () => {
     await post({
       action: "saveMonth",
       month: "2027-03",
+      create: true,
       expenses: exp,
       corpRate: 0.7,
     });
     await post({
       action: "savePayment",
       month: "2027-03",
-      flat: "101-3BHK",
+      flat: "A-101",
       maint: 100,
       corp: 250,
       mode: "UPI",
@@ -398,14 +415,14 @@ describe("Corp Fund figures are visible to viewers; the ledger is not", () => {
     });
     const pay = (r) =>
       r.body.payments.find(
-        (p) => p.month === "2027-03" && p.flat === "101-3BHK",
+        (p) => p.month === "2027-03" && p.flat === "A-101",
       );
     await post({
       action: "saveUser",
       username: "view2",
       password: "viewer1234",
       role: "user",
-      flat: "101-3BHK",
+      flat: "A-101",
     });
     const t = (
       await call("POST", {
@@ -471,7 +488,7 @@ describe("billing and organisation settings", () => {
               corpRate: 0.8,
             },
           },
-        })
+        }, superAdmin)
       ).body.ok,
     ).toBe(true);
     const r = (await get()).body;

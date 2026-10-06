@@ -247,7 +247,7 @@ export const snapshotOf = (
       description: e.description,
       amount: +e.amount || 0,
     })),
-    due: per((f) => maintOf(m, f, flats)),
+    due: per((f) => maintOf(m, f)),
     cdue: per((f) => corpOf(f, m)),
     paid: per((f) => +(by[f.flat ?? ""]?.maint ?? 0) || 0),
     cpaid: per((f) => +(by[f.flat ?? ""]?.corp ?? 0) || 0),
@@ -392,7 +392,6 @@ export const buildSummary = (
       flats,
       m,
       paymentsByMonth.get(m.month) || [],
-      data.settings?.isBlocks === true,
     ),
     archived: false,
   }));

@@ -5,7 +5,6 @@ import { createRoot } from "react-dom/client";
 import { MonthTab } from "../src/features/months/index.js";
 import App from "../src/App.jsx";
 import Dashboard from "../src/features/dashboard/index.js";
-import MaintenanceSettings from "../src/features/settings/index.js";
 import Backup from "../src/components/Backup.jsx";
 import Expenses from "../src/components/Expenses.jsx";
 
@@ -49,7 +48,7 @@ async function mount(node: any) {
 }
 const typeInto = async (input: any, value: string) => {
   const set = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
+    input.ownerDocument.defaultView.HTMLInputElement.prototype,
     "value",
   ).set;
   await act(async () => {
@@ -61,13 +60,19 @@ const row = (el: any, flat: string) =>
   [...el.querySelectorAll("tbody tr")].find((tr) =>
     tr.textContent.includes(flat),
   );
-// the three inputs of a row in column order: maint paid, corp paid, total paid
+const paymentRow = (el: any, flat: string, part: "Maintenance" | "Corp Fund") =>
+  [...el.querySelectorAll(`section[aria-label="${part} payments"] tbody tr`)]
+    .find((tr) => tr.textContent.includes(flat));
+// Maintenance rows contain maintenance paid and combined total; Corp Fund rows contain Corp Fund paid.
 const paidBoxes = (tr: any): any[] => [
   ...tr.querySelectorAll("input[type=number]"),
 ];
+const corpBox = (el: any, flat: string) =>
+  paymentRow(el, flat, "Corp Fund").querySelector('input[type="number"]');
 
 describe("month table: Actual Total Paid", () => {
   it("typing a total splits it into maintenance and Corp Fund (Flat 104: 2500 = 1900 + 600)", async () => {
+    const onSave = vi.fn(async () => true);
     const { el, done } = await mount(
       h(MonthTab as any, {
         m: month,
@@ -76,29 +81,52 @@ describe("month table: Actual Total Paid", () => {
         admin: true,
         hide: false,
         settings: baseSettings,
-        onSave: async () => true,
+        onSave,
         ledger: [],
       }),
     );
-    const [maint, corp, total] = paidBoxes(row(el, "104"));
+    const [maint, total] = paidBoxes(
+      paymentRow(el, "104", "Maintenance"),
+    );
+    const corp = corpBox(el, "104");
     await typeInto(total, "2500");
-    expect([maint.value, corp.value, total.value]).toEqual([
-      "1900",
-      "600",
-      "2500",
-    ]);
+    expect([maint.value, total.value]).toEqual(["1900", "2500"]);
+    await act(async () =>
+      [...el.querySelectorAll("button")]
+        .find((b) => b.textContent.includes("Save All"))
+        .click(),
+    );
+    expect(onSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "savePayments",
+        entries: [expect.objectContaining({ flat: "104", maint: 1900, corp: 600 })],
+      }),
+    );
     await typeInto(total, "1500"); // a short payment fills maintenance first
-    expect([maint.value, corp.value]).toEqual(["1500", "0"]);
+    expect(maint.value).toBe("1500");
     await typeInto(total, "1250.5"); // decimals can be typed without the box rewriting itself
     expect(total.value).toBe("1250.5");
     await typeInto(total, "");
-    expect([maint.value, corp.value]).toEqual(["", ""]);
+    expect([maint.value, total.value]).toEqual(["", ""]);
     await typeInto(maint, "1000"); // editing a part by hand: the total box follows
-    await typeInto(corp, "100");
-    expect(total.value).toBe("1100");
+    expect(total.value).toBe("1000");
+    await typeInto(corp, "100"); // the separate table's draft is included when saving
+    expect(total.value).toBe("1000");
+    await act(async () =>
+      [...el.querySelectorAll("button")]
+        .find((b) => b.textContent.includes("Save All"))
+        .click(),
+    );
+    expect(onSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "savePayments",
+        entries: [expect.objectContaining({ flat: "104", maint: 1000, corp: 100 })],
+      }),
+    );
     done();
   });
   it("uses the split rule from Settings", async () => {
+    const onSave = vi.fn(async () => true);
     const { el, done } = await mount(
       h(MonthTab as any, {
         m: month,
@@ -107,16 +135,29 @@ describe("month table: Actual Total Paid", () => {
         admin: true,
         hide: false,
         settings: { ...baseSettings, paymentSplit: "corp_first" },
-        onSave: async () => true,
+        onSave,
         ledger: [],
       }),
     );
-    const [maint, corp, total] = paidBoxes(row(el, "104"));
+    const [maint, total] = paidBoxes(
+      paymentRow(el, "104", "Maintenance"),
+    );
     await typeInto(total, "500");
-    expect([maint.value, corp.value]).toEqual(["0", "500"]);
+    expect([maint.value, total.value]).toEqual(["0", "500"]);
+    await act(async () =>
+      [...el.querySelectorAll("button")]
+        .find((b) => b.textContent.includes("Save All"))
+        .click(),
+    );
+    expect(onSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        entries: [expect.objectContaining({ flat: "104", maint: 0, corp: 500 })],
+      }),
+    );
     done();
   });
   it("Bulk fill: one total per flat, split by that flat's own dues", async () => {
+    const onSave = vi.fn(async () => true);
     const { el, done } = await mount(
       h(MonthTab as any, {
         m: month,
@@ -125,7 +166,7 @@ describe("month table: Actual Total Paid", () => {
         admin: true,
         hide: false,
         settings: baseSettings,
-        onSave: async () => true,
+        onSave,
         ledger: [],
       }),
     );
@@ -143,17 +184,27 @@ describe("month table: Actual Total Paid", () => {
         .find((b) => b.textContent === "Apply to flats")
         .click(),
     );
-    // 104 owes 1900 + 600; 105 owes 1900 + 0 (no Corp Fund): maintenance first, the surplus goes to Corp Fund
+    // The separate Corp Fund table keeps its own draft until Save All.
     expect(
-      paidBoxes(row(el, "104"))
-        .slice(0, 3)
-        .map((i) => i.value),
-    ).toEqual(["1900", "600", "2500"]);
+      paidBoxes(paymentRow(el, "104", "Maintenance")).map((i) => i.value),
+    ).toEqual(["1900", "2500"]);
     expect(
-      paidBoxes(row(el, "105"))
-        .slice(0, 3)
-        .map((i) => i.value),
-    ).toEqual(["1900", "600", "2500"]);
+      paidBoxes(paymentRow(el, "105", "Maintenance")).map((i) => i.value),
+    ).toEqual(["1900", "2500"]);
+    await act(async () =>
+      [...el.querySelectorAll("button")]
+        .find((b) => b.textContent.includes("Save All"))
+        .click(),
+    );
+    expect(onSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "savePayments",
+        entries: expect.arrayContaining([
+          expect.objectContaining({ flat: "104", maint: 1900, corp: 600 }),
+          expect.objectContaining({ flat: "105", maint: 1900, corp: 600 }),
+        ]),
+      }),
+    );
     done();
   });
 });
@@ -177,6 +228,7 @@ describe("App shell", () => {
   });
   async function open(role: any, click?: string) {
     localStorage.clear();
+    sessionStorage.clear();
     if (role)
       localStorage.setItem(
         "rv_auth",
@@ -211,9 +263,9 @@ describe("App shell", () => {
   }
   it("shows the organisation from Settings in the sidebar and the browser title", async () => {
     const a = await open("admin", "Months");
-    expect(a.brand).toBe("Sunrise");
-    expect(a.mark).toBe("S");
-    expect(document.title).toBe("Sunrise Maintenance");
+    expect(a.brand).toBe("My Apartment");
+    expect(a.mark).toBe("MA");
+    expect(document.title).toBe("Months · My Apartment");
     expect(a.html).toContain(
       "SUNRISE APARTMENTS OWNERS ASSOCIATION – MAINTENANCE PAYMENT TRACKER",
     );
@@ -225,9 +277,9 @@ describe("App shell", () => {
   });
   it("+ Add month only on the Months page; the names toggle only where names are shown", async () => {
     const months = await open("admin", "Months");
-    expect([months.add, months.names]).toEqual([1, 1]);
+    expect([months.add, months.names]).toEqual([1, 0]);
     const summary = await open("admin", "Financial Summary");
-    expect([summary.add, summary.names]).toEqual([0, 1]);
+    expect([summary.add, summary.names]).toEqual([0, 0]);
     for (const page of ["Flats", "Settings"]) {
       const p = await open("admin", page);
       expect([page, p.add, p.names]).toEqual([page, 0, 0]);
@@ -283,7 +335,7 @@ describe("Add month dialog", () => {
     const dlg = el.querySelector('[role="dialog"]');
     expect(dlg.textContent).toContain("Copy from");
     expect(dlg.textContent).toContain("Payments are never copied");
-    expect(el.querySelector('input[type="month"]').value).toBe("2026-10"); // the month after the latest
+    expect(el.querySelector('[aria-label="Select month to add"]').textContent).toContain("October 2026");
     // choose: lines with amounts, calculation from the source month, flats as on the Flats page
     const pick = async (text: string) =>
       await act(async () =>
@@ -346,9 +398,24 @@ describe("Add month dialog", () => {
         .find((b) => /Add month/.test(b.textContent))
         .click(),
     );
-    await typeInto(el.querySelector('input[type="month"]'), "2026-09");
+    await act(async () =>
+      el.querySelector('[aria-label="Select month to add"]').click(),
+    );
+    await act(async () =>
+      [...el.querySelectorAll(".month-picker-grid button")]
+        .find((b) => b.textContent.trim().startsWith("Sep"))
+        .click(),
+    );
     const dlg = el.querySelector('[role="dialog"]');
-    expect(dlg.textContent).toContain("Sept 2026 already exists");
+    await act(async () =>
+      el.querySelector('[aria-label="Select month to add"]').click(),
+    );
+    await act(async () =>
+      [...el.querySelectorAll(".month-picker-grid button")]
+        .find((b) => b.textContent.trim().startsWith("Sep"))
+        .click(),
+    );
+    expect(dlg.textContent).toContain("already exists");
     expect(
       ([...dlg.querySelectorAll("button")] as any[]).find(
         (b) => b.textContent === "Create month",
@@ -358,37 +425,44 @@ describe("Add month dialog", () => {
   });
 });
 
-describe("Settings → Billing", () => {
-  it("starts from the latest month, sends billing only when it changed, and warns before a bad rate is saved", async () => {
-    const calls: any[] = [];
+describe("Month billing settings", () => {
+  it("saves the selected Corp Fund rate with the monthly calculation", async () => {
+    const onSave = vi.fn(async () => true);
+    const billingMonth = {
+      ...month,
+      corp_applicable: true,
+      corp_method: "sqft",
+      corp_value: 0.5,
+    };
     const { el, done } = await mount(
-      h(MaintenanceSettings as any, {
-        settings: { ...baseSettings },
-        months: [month],
-        onSave: async (b: any) => calls.push(b),
+      h(Expenses as any, {
+        m: billingMonth,
+        flats,
+        admin: true,
+        superAdmin: false,
+        settings: baseSettings,
+        onSave,
       }),
     );
-    const save = (): any =>
-      ([...el.querySelectorAll("button")] as any[]).find(
-        (b) => b.textContent === "Save settings",
-      );
-    const boxes = [...el.querySelectorAll("input.calc-value")] as any[];
-    expect(boxes[0].value).toBe("1900"); // the selected method (common amount) shows its value
-    await act(async () => save().click()); // nothing changed -> no billing key
-    expect(calls[0].settings.billing).toBeUndefined();
-    const corpRate = boxes[1];
+    const corpRate = [...el.querySelectorAll("label.opt")]
+      .find((label) => label.textContent.includes("Corp Fund rate"))
+      .querySelector("input");
     expect(corpRate.value).toBe("0.5");
     await typeInto(corpRate, "0.75");
-    await act(async () => save().click());
-    expect(calls[1].settings.billing).toEqual({
-      method: "common",
-      value: 1900,
-      rounding: "none",
-      corpRate: 0.75,
-      corpRounding: "nearest",
-    });
-    await typeInto(corpRate, "");
-    expect(save().disabled).toBe(true);
+    await act(async () =>
+      [...el.querySelectorAll("button")]
+        .find((b) => b.textContent === "Calculate Maintenance Amount")
+        .click(),
+    );
+    expect(onSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "saveMonth",
+        month: "2026-09",
+        corpApplicable: true,
+        corpMethod: "sqft",
+        corpRate: 0.75,
+      }),
+    );
     done();
   });
 });
@@ -408,7 +482,10 @@ describe("Months tab: payment status filter", () => {
         ledger: [],
       }),
     );
-    const rowsShown = () => [...el.querySelectorAll("tbody tr")].length;
+    const rowsShown = () =>
+      el.querySelectorAll(
+        'section[aria-label="Maintenance payments"] tbody tr',
+      ).length;
     expect(rowsShown()).toBe(2);
     const select = el.querySelector("select[value], select");
     const pick = async (value: string) => {
@@ -416,7 +493,7 @@ describe("Months tab: payment status filter", () => {
         [...s.options].some((o: any) => o.value === "paid"),
       ) as HTMLSelectElement;
       const setVal = Object.getOwnPropertyDescriptor(
-        HTMLSelectElement.prototype,
+        sel.ownerDocument.defaultView.HTMLSelectElement.prototype,
         "value",
       )!.set!;
       await act(async () => {
@@ -456,9 +533,9 @@ describe("Dashboard: payment status", () => {
         loading: false,
       }),
     );
-    expect(el.textContent).toContain("Status");
-    expect(el.textContent).toContain("Fully paid");
-    expect(el.textContent).toContain("Unpaid");
+    expect(el.textContent).toContain("Month-wise summary");
+    expect(el.textContent).toContain("Maintenance + Corp Fund due");
+    expect(el.textContent).toContain("Maintenance + Corp Fund collected");
     done();
   });
 });

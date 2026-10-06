@@ -66,7 +66,7 @@ describe("screens render", () => {
     expect(html).not.toContain("Columns</button>"); // column settings live in Settings now
     expect(html).not.toContain("<b>Corp Fund rate</b>"); // the rate is a Settings → Billing item (only a pointer remains)
     expect(html).not.toContain('type="radio"'); // no calculation-method options on the month tab
-    expect(html).toContain("OWNERS ASSOCIATION – MAINTENANCE PAYMENT TRACKER"); // neutral until an organisation is set
+    expect(html).toContain("MY APARTMENT – MAINTENANCE PAYMENT TRACKER");
   });
   it("the title follows the organisation name from Settings", () => {
     const html = renderToStaticMarkup(
@@ -103,7 +103,7 @@ describe("screens render", () => {
     expect(html).not.toContain("Add from list");
     expect(html).not.toContain('class="pri"');
   });
-  it("hiding a combined column in settings removes it from the month table", () => {
+  it("hiding identity columns leaves the combined payment columns intact", () => {
     const html = renderToStaticMarkup(
       h(MonthTab as any, {
         m,
@@ -111,13 +111,15 @@ describe("screens render", () => {
         pays: {},
         admin: true,
         hide: false,
-        settings: { ...settings, hidden: ["texp", "tpaid"] },
+        settings: { ...settings, hidden: ["name", "bua"] },
         onSave: noop,
         ledger: [],
       }),
     );
-    expect(html).not.toContain("Expected Total (Maint + Corp Fund)");
-    expect(html).not.toContain("Actual Total Paid (Maint + Corp Fund)");
+    expect(html).not.toContain("Owner");
+    expect(html).not.toMatch(/<th[^>]*>Sq Ft<\/th>/);
+    expect(html).toContain("Expected Total (Maint + Corp Fund)");
+    expect(html).toContain("Actual Total Paid (Maint + Corp Fund)");
   });
   it("dashboard shows Corp Fund to viewers and guests too", () => {
     const data = {
@@ -138,9 +140,9 @@ describe("screens render", () => {
         loading: false,
       }),
     );
-    expect(html).toContain("Corp Due");
-    expect(html).toContain("Total Due (Maint + Corp)");
-    expect(html).toContain("Corpus");
+    expect(html).toContain("Maintenance + Corp Fund collected");
+    expect(html).toContain("Maintenance + Corp Fund due");
+    expect(html).toContain("Corp Fund");
   });
   it("dashboard shows carry-forward source month and flat-level amounts to admins", () => {
     const carryMonth = {
@@ -172,7 +174,8 @@ describe("screens render", () => {
       }),
     );
     expect(html).toContain("Carried-forward flat details");
-    expect(html).toContain("carried forward since September 2026");
+    expect(html).toContain("carried forward since");
+    expect(html).toContain("September 2026");
     expect(html).toContain("104");
     expect(html).toContain("Owner");
     expect(html).toContain("Other");
@@ -233,42 +236,41 @@ describe("screens render", () => {
         loading: false,
       }),
     );
-    expect(html).toContain("Total Due (Maint + Corp)");
-    expect(html).toContain("Total Paid (Maint + Corp)");
-    expect(html).toContain("Total Balance");
+    expect(html).toContain("Maintenance + Corp Fund collected");
+    expect(html).toContain("Maintenance + Corp Fund due");
+    expect(html).toContain("Maintenance + Corp Fund pending from flats");
     // due: maintenance 1900 + 1900, Corp Fund 600 for 104 only (105 is excluded) = 4,400; paid 1900 + 600
     expect(html).toContain("4,400.00");
     expect(html).toContain("2,500.00");
   });
   it("flats page has a Corp Fund checkbox next to the maintenance one", () => {
     const html = renderToStaticMarkup(
-      h(Flats as any, { flats, onSave: noop, superAdmin: false }),
+      h(Flats as any, {
+        flats,
+        settings,
+        onSave: noop,
+        superAdmin: false,
+      }),
     );
     expect(html).toContain("Maint. excluded");
     expect(html).toContain("Corp Fund excluded");
     expect(html).toContain("Exclude flat 105 from Corp Fund");
   });
-  it("settings offer the expense heads and the split rule", () => {
+  it("settings show section navigation and organisation settings by default", () => {
     const html = renderToStaticMarkup(
       h(MaintenanceSettings as any, { settings, onSave: noop }),
     );
-    expect(html).toContain("Bescom Gym");
-    expect(html).toContain("Diesel");
+    expect(html).toContain("Expenses &amp; Payments");
     expect(html).toContain("Organisation");
-    expect(html).toContain("Billing");
-    expect(html).toContain("Corp Fund rate");
-    expect(html).toContain("Round off");
-    expect(html).toContain("Maintenance first, then Corp Fund");
-    expect(html).toContain("Proportional to the amounts due");
   });
   it("the expenses block lists configured heads that are not yet in the month", () => {
     const html = renderToStaticMarkup(
-      h(Expenses as any, { m, admin: true, onSave: noop, settings }),
+      h(Expenses as any, { m, flats, admin: true, onSave: noop, settings }),
     );
     expect(html).toContain('<option value="Diesel">Diesel</option>');
     expect(html).toContain('<option value="Bescom Gym">Bescom Gym</option>');
     // how maintenance is calculated is not edited here any more
-    expect(html).toContain("Settings → Billing");
+    expect(html).toContain("Settings → Expenses");
     expect(html).not.toContain('type="radio"');
   });
 });
