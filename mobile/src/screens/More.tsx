@@ -154,8 +154,9 @@ export default function More({ items, onOpen, role, username, flat, save, appLoc
       <Section title="About us">
         <Text style={s.rowTitle}>{APP_BRAND_NAME}</Text>
         <Text style={[s.muted, { marginTop: 6 }]}>
-          A community management app that helps residents and the association coordinate maintenance payments, service requests, bookings,
-          visitor access, and parcel updates.
+          A community management app designed to make everyday association activities
+          easier for residents and administrators. It helps manage maintenance payments,
+          service requests, facility bookings, visitor access, and parcel updates in one place.
         </Text>
       </Section>
       <Section title="Privacy & data protection">
