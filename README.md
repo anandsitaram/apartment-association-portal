@@ -277,3 +277,32 @@ database, and shared business logic.
 │
 └── 🗄️ Database
     └── PostgreSQL
+
+## 🚀 Try It Out
+
+You can try the live application here:
+
+🌐 **Web App:** https://apartment-association-portal.vercel.app
+
+## 📱 Get the Android App
+
+The Android application provides mobile access to the Apartment Association Portal.
+
+### 📥 Install the Android App
+
+1. Open the Android app download link provided by the association.
+2. Download the latest **APK** file.
+3. Open the downloaded APK on your Android phone.
+4. If Android asks for permission to install from an unknown source, allow installation for the browser/file manager you used to download the APK.
+5. Install the application.
+6. Open **Apartment Association Portal**.
+7. Enter your association account credentials.
+8. Start using the mobile application. 🎉
+
+### 🔐 Demo Login
+
+You can use the following demo account to test the application:
+
+```text
+User ID: 101
+Password: Test@123
