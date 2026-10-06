@@ -10,6 +10,10 @@ payments, a detailed summary, and Excel export in the original sheet's format.
 
 ---
 
+## Documentation
+
+- [Complete technical, functional, security and cloud migration documentation](docs/APARTMENT_ASSOCIATION_PORTAL_DOCUMENTATION.pdf)
+
 ## 1. Features
 
 - **Sheet-style tabs** (bottom bar): `SUMMARY`, one tab per month (e.g. `Sep 2026`), `+` to add a month, `USERS` (admin).

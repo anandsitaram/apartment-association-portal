@@ -9,3 +9,5 @@
  */
 export const APP_BRAND_NAME = "My Apartment";
 export const APP_BRAND_SHORT = "MA";
+
+export const SUPPORT_EMAIL = "aiintechlabs@gmail.com";

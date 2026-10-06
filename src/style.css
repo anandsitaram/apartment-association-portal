@@ -7403,3 +7403,24 @@ textarea {
     font-size: 20px;
   }
 }
+
+/* Login contact */
+.login-contact {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  color: var(--rv-muted);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.login-contact a {
+  color: var(--brand-green);
+  font-weight: 700;
+  text-decoration: none;
+}
+.login-contact a:hover,
+.login-contact a:focus-visible {
+  text-decoration: underline;
+}

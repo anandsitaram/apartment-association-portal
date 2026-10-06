@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Platform, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { Button, Field } from '../components';
 import { call, errText, getApiBase, isValidBaseUrl, normalizeBaseUrl, setApiBase } from '../core/api';
 import { DEFAULT_API_BASE_URL } from '../core/config';
 import { Auth, writeServer } from '../services';
-import { APP_BRAND_NAME } from '../../../shared/branding';
+import { APP_BRAND_NAME, SUPPORT_EMAIL } from '../../../shared/branding';
 import s from '../styles/styles';
 
 export default function Login({ onLoggedIn, notice }: { onLoggedIn: (a: Auth) => void; notice?: string }) {
@@ -66,6 +66,16 @@ export default function Login({ onLoggedIn, notice }: { onLoggedIn: (a: Auth) =>
           />
           {!!error && <Text style={s.danger}>{error}</Text>}
           <Button title="Sign in" onPress={submit} busy={busy} />
+          <View style={{ alignItems: 'center', marginTop: 18, paddingHorizontal: 8 }}>
+            <Text style={{ color: '#6B7280', fontSize: 13, textAlign: 'center' }}>Need help? Contact us</Text>
+            <Text
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+              style={{ color: '#2E7D32', fontSize: 14, fontWeight: '600', marginTop: 4, textAlign: 'center' }}
+            >
+              {SUPPORT_EMAIL}
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

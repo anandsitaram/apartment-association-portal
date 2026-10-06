@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { APP_BRAND_NAME, APP_BRAND_SHORT } from "../../shared/branding";
+import {
+  APP_BRAND_NAME,
+  APP_BRAND_SHORT,
+  SUPPORT_EMAIL,
+} from "../../shared/branding";
 
 export default function Login({
   onLogin,
@@ -109,6 +113,10 @@ export default function Login({
           >
             Sign in
           </button>
+          <div className="login-contact" aria-label="Contact us">
+            <span>Need help?</span>{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+          </div>
           {onCancel && (
             <button type="button" className="login-cancel" onClick={onCancel}>
               Continue without signing in
