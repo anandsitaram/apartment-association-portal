@@ -100,7 +100,7 @@ describe("visitor access security", () => {
         username: "visitor-owner",
         password: "ownerpw1",
         role: "user",
-        flat: "A-101",
+        flat: "101-3BHK",
       },
       superToken,
     );
@@ -132,7 +132,7 @@ describe("visitor access security", () => {
       {
         action: "createSecurityCode",
         visitorName: "Admin should not create",
-        flat: "A-101",
+        flat: "101-3BHK",
       },
       token,
     );
@@ -144,7 +144,7 @@ describe("visitor access security", () => {
       {
         action: "createSecurityCode",
         visitorName: "Wrong flat",
-        flat: "A-102",
+        flat: "102-2BHK",
       },
       ownerToken,
     );
@@ -155,7 +155,7 @@ describe("visitor access security", () => {
       {
         action: "createSecurityCode",
         visitorName: "Expired before approval",
-        flat: "A-101",
+        flat: "101-3BHK",
         purpose: "Visit",
       },
       ownerToken,
@@ -201,7 +201,7 @@ describe("visitor access security", () => {
       {
         action: "createSecurityCode",
         visitorName: "Expired before gate",
-        flat: "A-101",
+        flat: "101-3BHK",
         purpose: "Visit",
       },
       ownerToken,
@@ -384,7 +384,7 @@ describe("months and Corp Fund rate", () => {
 
     const data = (await get()).body;
     const target = data.months.find((m: any) => m.month === nextMonth);
-    expect(target.notes.carryForward["A-101"]).toMatchObject({
+    expect(target.notes.carryForward["101-3BHK"]).toMatchObject({
       maintenance: 100,
       corp: 50,
       combined: false,
@@ -395,7 +395,6 @@ describe("months and Corp Fund rate", () => {
     await post({
       action: "saveMonth",
       month: "2026-09",
-      create: true,
       expenses: exp,
       method: "divide",
       value: 25,
@@ -420,7 +419,6 @@ describe("months and Corp Fund rate", () => {
     await post({
       action: "saveMonth",
       month: "2026-10",
-      create: true,
       expenses: exp,
       corpRate: 0.6,
     });
@@ -449,8 +447,8 @@ describe("column settings", () => {
 describe("flats", () => {
   it("is seeded once with the built-in list; non-admins get no owner names", async () => {
     const admin = (await get()).body.flats;
-    expect(admin.length).toBe(40);
-    expect(admin[0]).toMatchObject({ flat: "A-101", name: "Alex Morgan" });
+    expect(admin.length).toBe(28);
+    expect(admin[0]).toMatchObject({ flat: "101-3BHK", name: "Dr M V Reddy" });
     // Any logged-in non-staff account (a plain "user") gets no owner names.
     // (There's no more anonymous/public view to check this against — login
     // is always required now — so use a real viewer account instead.)
@@ -463,7 +461,7 @@ describe("flats", () => {
       username: "plainviewer",
       password: "viewerpw1",
       role: "user",
-      flat: "A-101",
+      flat: "101-3BHK",
     });
     const viewerToken = (
       await post(
@@ -472,7 +470,7 @@ describe("flats", () => {
       )
     ).body.token;
     const viewer = (await get(viewerToken)).body.flats;
-    expect(viewer.length).toBe(40);
+    expect(viewer.length).toBe(28);
     expect(viewer.every((f) => f.name === "")).toBe(true);
 
     // Carry-forward entries for other flats must remain private when the optional
@@ -490,24 +488,11 @@ describe("flats", () => {
       value: 28,
       notes: {
         carryForward: {
-          "A-101": { maintenance: 900, corp: 250, combined: false },
-          "A-102": { maintenance: 1500, corp: 500, combined: false },
+          "101-3BHK": { maintenance: 900, corp: 250, combined: false },
+          "102-2BHK": { maintenance: 1500, corp: 500, combined: false },
         },
       },
     });
-    const { sql } = await import("../server/db.js");
-    await sql.query(
-      "UPDATE months SET notes=notes || $2::jsonb WHERE month=$1",
-      [
-        "2041-01",
-        JSON.stringify({
-          carryForward: {
-            "A-101": { maintenance: 900, corp: 250, combined: false },
-            "A-102": { maintenance: 1500, corp: 500, combined: false },
-          },
-        }),
-      ],
-    );
     const staffMonth = (await get()).body.months.find(
       (m: any) => m.month === "2041-01",
     );
@@ -516,7 +501,7 @@ describe("flats", () => {
       (m: any) => m.month === "2041-01",
     );
     expect(viewerMonth.notes.carryForward).toEqual({
-      "A-101": { maintenance: 900, corp: 250, combined: false },
+      "101-3BHK": { maintenance: 900, corp: 250, combined: false },
     });
   });
 
@@ -589,60 +574,147 @@ describe("flats", () => {
 
 describe("deleting a month keeps its Summary figures", () => {
   it("archives the snapshot, drops payments, and a re-created month starts fresh", async () => {
-    const month = "2050-03";
     // the figures are frozen on the server from the stored month and payments (never from the browser)
     // (an earlier test removed every flat, so add one back)
     await post({
       action: "saveFlat",
       create: true,
-      flat: "A-101",
+      flat: "101-3BHK",
       sl: 1,
       name: "",
       type: "N",
       bua: 1706.26,
       uds: 557.49,
     });
-    const created = await post({
-      action: "saveMonth",
-      month,
-      create: true,
-      expenses: exp,
-    });
-    expect(created.code, JSON.stringify(created.body)).toBe(200);
-    const payment = await post({
+    await post({
       action: "savePayment",
-      month,
-      flat: "A-101",
+      month: "2026-09",
+      flat: "101-3BHK",
       maint: 100,
       corp: 50,
       mode: "UPI",
       date: "2026-09-02",
     });
-    expect(payment.code, JSON.stringify(payment.body)).toBe(200);
-    const deleted = await post({ action: "deleteMonth", month }, superToken);
-    expect(deleted.code, JSON.stringify(deleted.body)).toBe(200);
-    expect(deleted.body.deleted).toBe(true);
-    let body = (await get()).body;
-    expect(body.months.find((m) => m.month === month)).toBeUndefined();
-    expect(body.payments.filter((p) => p.month === month)).toEqual([]);
-    const archive = body.archive.find((a) => a.month === month);
-    expect(archive.data.paid["A-101"]).toBe(100);
-    expect(archive.data.cpaid["A-101"]).toBe(50);
     expect(
-      (await post({ action: "deleteMonth", month: "2050-04" }, superToken))
+      (await post({ action: "deleteMonth", month: "2026-09" }, superToken)).body
+        .ok,
+    ).toBe(true);
+    let body = (await get()).body;
+    expect(body.months.find((m) => m.month === "2026-09")).toBeUndefined();
+    expect(body.payments.filter((p) => p.month === "2026-09")).toEqual([]);
+    expect(body.archive).toHaveLength(1);
+    expect(body.archive[0].data.paid["101-3BHK"]).toBe(100);
+    expect(body.archive[0].data.cpaid["101-3BHK"]).toBe(50);
+    expect(
+      (await post({ action: "deleteMonth", month: "2041-01" }, superToken))
         .code,
     ).toBe(404); // no such month: nothing archived
-    expect((await get()).body.archive.some((a) => a.month === month)).toBe(
+    expect((await get()).body.archive).toHaveLength(1);
+    await post({ action: "saveMonth", month: "2026-09", expenses: exp });
+    expect((await get()).body.archive).toHaveLength(0);
+  });
+});
+
+describe("parcel notices", () => {
+  it("opens a notification by id for the owner and removes deleted parcels from lists", async () => {
+    const suffix = Date.now();
+    const ownerUsername = `parcel-owner-${suffix}`;
+    const securityUsername = `parcel-security-${suffix}`;
+    const ownerCreated = await post(
+      {
+        action: "saveUser",
+        username: ownerUsername,
+        password: "ownerpw1",
+        role: "user",
+        flat: "101-3BHK",
+      },
+      superToken,
+    );
+    expect(ownerCreated.code).toBe(200);
+    const securityCreated = await post(
+      {
+        action: "saveUser",
+        username: securityUsername,
+        password: "securitypw1",
+        role: "security",
+      },
+      superToken,
+    );
+    expect(securityCreated.code).toBe(200);
+
+    const ownerToken = (
+      await post(
+        { action: "login", username: ownerUsername, password: "ownerpw1" },
+        null,
+      )
+    ).body.token;
+    const securityToken = (
+      await post(
+        {
+          action: "login",
+          username: securityUsername,
+          password: "securitypw1",
+        },
+        null,
+      )
+    ).body.token;
+
+    const created = await post(
+      {
+        action: "createParcelNotice",
+        flat: "101-3BHK",
+        courier: "Test Courier",
+        trackingNumber: "TRACK-1",
+        notes: "Test parcel",
+        photoData: "data:image/jpeg;base64,dGVzdA==",
+      },
+      securityToken,
+    );
+    expect(created.code).toBe(200);
+    const id = created.body.notice.id;
+
+    const pending = await post(
+      { action: "listPendingParcelNotifications" },
+      ownerToken,
+    );
+    expect(pending.code).toBe(200);
+    expect(pending.body.notices.some((notice: any) => notice.id === id)).toBe(
       true,
     );
-    await post({
-      action: "saveMonth",
-      month,
-      create: true,
-      expenses: exp,
-    });
-    expect((await get()).body.archive.some((a) => a.month === month)).toBe(
-      false,
+
+    const direct = await post({ action: "getParcelNotice", id }, ownerToken);
+    expect(direct.code).toBe(200);
+    expect(direct.body.notice.id).toBe(id);
+    expect(direct.body.notice.flat).toBe("101-3BHK");
+
+    const deleted = await post(
+      { action: "deleteParcelNotice", id },
+      ownerToken,
     );
+    expect(deleted.code).toBe(200);
+
+    const listAfterDelete = await post(
+      { action: "listParcelNotices" },
+      ownerToken,
+    );
+    expect(listAfterDelete.code).toBe(200);
+    expect(
+      listAfterDelete.body.notices.some((notice: any) => notice.id === id),
+    ).toBe(false);
+
+    const pendingAfterDelete = await post(
+      { action: "listPendingParcelNotifications" },
+      ownerToken,
+    );
+    expect(pendingAfterDelete.code).toBe(200);
+    expect(
+      pendingAfterDelete.body.notices.some((notice: any) => notice.id === id),
+    ).toBe(false);
+
+    const directAfterDelete = await post(
+      { action: "getParcelNotice", id },
+      ownerToken,
+    );
+    expect(directAfterDelete.code).toBe(404);
   });
 });

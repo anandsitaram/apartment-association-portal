@@ -58,10 +58,36 @@ export default function VisitorAccess({
   const [photoRequests, setPhotoRequests] = useState<PhotoRequest[]>([]);
   const [parcelNotices, setParcelNotices] = useState<ParcelNotice[]>([]);
   const [viewingParcelId, setViewingParcelId] = useState<number | null>(parcelNoticeId ?? null);
+  const [parcelUnavailable, setParcelUnavailable] = useState(false);
 
   useEffect(() => {
-    if (parcelNoticeId != null) setViewingParcelId(parcelNoticeId);
+    if (parcelNoticeId != null) {
+      setParcelUnavailable(false);
+      setViewingParcelId(parcelNoticeId);
+    }
   }, [parcelNoticeId]);
+
+  // A notification contains a parcel ID. Resolve that ID directly from the
+  // server instead of depending on the separately loaded list/cache. This
+  // prevents a valid notification from opening an empty detail view.
+  useEffect(() => {
+    if (viewingParcelId == null) return;
+    let active = true;
+    void call<{ notice: ParcelNotice }>({ action: 'getParcelNotice', id: viewingParcelId }, token)
+      .then((result) => {
+        if (!active) return;
+        setParcelUnavailable(false);
+        setParcelNotices((current) => [result.notice, ...current.filter((notice) => notice.id !== result.notice.id)]);
+      })
+      .catch(() => {
+        if (!active) return;
+        setParcelNotices((current) => current.filter((notice) => notice.id !== viewingParcelId));
+        setParcelUnavailable(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [viewingParcelId, token]);
   const [selectedQr, setSelectedQr] = useState('');
   const [visitorName, setVisitorName] = useState('');
   const [selectedFlat, setSelectedFlat] = useState(userFlat ?? '');
@@ -194,6 +220,32 @@ export default function VisitorAccess({
       },
     ]);
 
+  const deleteParcel = (notice: ParcelNotice) =>
+    showAppDialog(
+      'Delete parcel notice?',
+      `Remove the parcel notice for flat ${notice.flat}? This also removes it from your parcel list and prevents the notification from reopening it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete parcel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await call({ action: 'deleteParcelNotice', id: notice.id }, token);
+              setParcelNotices((current) => current.filter((row) => row.id !== notice.id));
+              if (viewingParcelId === notice.id) {
+                setViewingParcelId(null);
+                setParcelUnavailable(false);
+                onClearParcelNotice?.();
+              }
+            } catch (e) {
+              setError(errText(e));
+            }
+          },
+        },
+      ],
+    );
+
   const remove = (row: CodeRow) =>
     showAppDialog('Delete visitor code?', `Remove code ${row.code} for ${row.visitor_name}?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -225,7 +277,9 @@ export default function VisitorAccess({
             }}
           />
           {!selectedParcel ? (
-            <EmptyState text="Parcel details are unavailable. The notice may have been removed or collected." />
+            <EmptyState
+              text={parcelUnavailable ? 'This parcel is no longer available. It may have been deleted.' : 'Loading parcel details…'}
+            />
           ) : (
             <View style={s.listRow}>
               <View style={s.rowBetween}>
@@ -261,6 +315,7 @@ export default function VisitorAccess({
                 {!!selectedParcel.photo_data && (
                   <Button title="Delete photo" kind="secondary" onPress={() => deleteParcelPhoto(selectedParcel)} />
                 )}
+                <Button title="Delete parcel" kind="secondary" onPress={() => deleteParcel(selectedParcel)} />
               </View>
             </View>
           )}
@@ -348,6 +403,7 @@ export default function VisitorAccess({
                   <Text style={s.small}>Collected {notice.acknowledged_at ? new Date(notice.acknowledged_at).toLocaleString() : ''}</Text>
                 )}
                 {!!notice.photo_data && <SmallButton title="Delete photo" danger onPress={() => deleteParcelPhoto(notice)} />}
+                <SmallButton title="Delete parcel" danger onPress={() => deleteParcel(notice)} />
               </View>
             </View>
           ))

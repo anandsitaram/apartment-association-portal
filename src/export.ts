@@ -130,8 +130,10 @@ export async function buildBook(
                 notes: { ...(m.notes || {}), mergeMaintenanceCorp: false },
               },
               f,
+              flats,
+              settings?.isBlocks === true,
             )
-          : maintOf(m, f),
+          : maintOf(m, f, flats, settings?.isBlocks === true),
       cd =
         m.notes?.mergeMaintenanceCorp === true
           ? corpChargeOf(f, m)
@@ -577,8 +579,8 @@ export async function buildBook(
     const p: Partial<Payment> = pays[f.flat] || {};
     const expected = r2(
       m.notes?.mergeMaintenanceCorp === true
-        ? maintOf(m, f)
-        : maintOf(m, f) + corpOf(f, m),
+        ? maintOf(m, f, flats, args.settings?.isBlocks === true)
+        : maintOf(m, f, flats, args.settings?.isBlocks === true) + corpOf(f, m),
     );
     const paid = r2((p.maint || 0) + (p.corp || 0));
     ws.getCell(r, finalExpectedCol).value = expected;

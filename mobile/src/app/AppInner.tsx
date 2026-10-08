@@ -314,10 +314,10 @@ export default function AppInner() {
 
   // Visitor Access is strictly a resident-only mobile screen. Filter it from admin navigation
   // even if role aliases or feature configuration accidentally include it.
-  const pages = useMemo(
-    () => availablePages(role, data.features).filter((p) => p.id !== 'visitor-access' || role === 'user'),
-    [role, data.features],
-  );
+  const pages = useMemo(() => {
+    const available = availablePages(role, data.features).filter((p) => p.id !== 'visitor-access' || role === 'user');
+    return role === 'security' ? available.filter((p) => p.id === 'security-desk' || p.id === 'contact') : available;
+  }, [role, data.features]);
 
   // Security accounts have a dedicated native workflow instead of the resident dashboard.
   useEffect(() => {
@@ -327,7 +327,7 @@ export default function AppInner() {
   const { tabs, more } = useMemo(() => splitTabs(pages, role), [pages, role]);
   const current = pages.find((p) => p.id === page) ?? tabs[0];
   const inTabs = tabs.some((t) => t.id === current?.id);
-  const showMore = page === 'more' || (!inTabs && !!current && page !== 'more');
+  const showMore = role !== 'security' && (page === 'more' || (!inTabs && !!current && page !== 'more'));
 
   // Android back: sub-pages opened from More return to More
   useEffect(() => {
@@ -397,7 +397,7 @@ export default function AppInner() {
     onNavigate: (p: string) => setPage(p),
   };
   const activeId = showMore ? 'more' : (current?.id ?? 'dashboard');
-  const title = page === 'more' ? 'More' : (current?.label ?? 'Dashboard');
+  const title = role === 'security' && page === 'more' ? 'Security Desk' : page === 'more' ? 'More' : (current?.label ?? 'Dashboard');
 
   const renderPage = () => {
     // Block direct/stale navigation to the resident visitor screen for every non-resident role.
@@ -570,7 +570,7 @@ export default function AppInner() {
             id: t.id,
             label: t.id === 'mymaintenance' ? 'My dues' : t.label.replace('Party Hall', 'Hall').replace('Gym Booking', 'Gym'),
           })),
-          { id: 'more', label: 'More' },
+          ...(role === 'security' ? [] : [{ id: 'more', label: 'More' }]),
         ].map((t) => {
           const Icon = ICONS[t.id] ?? MoreHorizontal;
           const on = activeId === t.id;

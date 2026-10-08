@@ -705,6 +705,10 @@ export default function App() {
     (n) =>
       n.roles.includes(effRole) &&
       (!n.feature || (data.features as any)[n.feature] !== false),
+  ).filter((n) =>
+    effRole === "security"
+      ? n.id === "security-desk" || n.id === "contact"
+      : true,
   );
   const navigate = async (id: string) => {
     writeBrowserStorage("rv_section", id);
@@ -1165,7 +1169,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        {auth && (
+        {auth && effRole !== "security" && (
           <button
             className="logout-nav"
             onClick={() => {

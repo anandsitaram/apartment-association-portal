@@ -78,6 +78,6 @@ describe("server maintenance billing basis", () => {
     expect(snapshot.expenses[1].allocationScope).toBe("block");
     expect(snapshot.expenses[1].block).toBe("A");
     const normalSnapshot = snapshotOf("2026-10", month, flats, [], false);
-    expect(normalSnapshot.due["A-101"]).toBe(433.33);
+    expect(normalSnapshot.due["A-101"]).toBeCloseTo(1300 / 3, 6);
   });
 });

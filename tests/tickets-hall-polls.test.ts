@@ -69,7 +69,7 @@ beforeAll(async () => {
     username: "flat101",
     password: "viewer1234",
     role: "user",
-    flat: "A-101",
+    flat: "101-3BHK",
   });
   viewerToken = (
     await call("POST", {
@@ -115,7 +115,7 @@ describe("tickets", () => {
     expect(r.body.ok).toBe(true);
     const [t] = (await get(admin)).body.tickets;
     expect(t).toMatchObject({
-      flat: "A-101",
+      flat: "101-3BHK",
       category: "security",
       status: "open",
     });
@@ -134,7 +134,7 @@ describe("tickets", () => {
     );
     expect(denied.code).toBe(403);
     const mine = (await get(viewerToken)).body.tickets;
-    expect(mine.every((t: any) => t.flat === "A-101")).toBe(true);
+    expect(mine.every((t: any) => t.flat === "101-3BHK")).toBe(true);
   });
 
   it("an anonymous/guest request cannot raise a ticket", async () => {
@@ -434,7 +434,6 @@ describe("notifications hub", () => {
     await post(
       {
         action: "saveFlat",
-        create: false,
         flat: flatCode,
         sl: f.sl,
         name: f.name,
@@ -451,8 +450,8 @@ describe("notifications hub", () => {
     process.env.RESEND_API_KEY = "re_test";
     process.env.MAIL_FROM = "RV Fallon <no-reply@example.com>";
     process.env.ENABLE_NOTIFICATION = "true";
-    await setFlatEmail("A-101", "flat101@example.com");
-    await setFlatEmail("A-102", "flat102@example.com");
+    await setFlatEmail("101-3BHK", "flat101@example.com");
+    await setFlatEmail("102-2BHK", "flat102@example.com");
   });
 
   it("a flat user cannot send a notification", async () => {
@@ -501,14 +500,14 @@ describe("notifications hub", () => {
         action: "sendNotificationMessage",
         channel: "email",
         targetType: "flat",
-        targetFlat: "A-101",
+        targetFlat: "101-3BHK",
         subject: "Personal notice",
         message: "Please collect your parcel.",
       },
       admin,
     );
     expect(r.body.ok).toBe(true);
-    expect(r.body.target).toBe("Flat A-101");
+    expect(r.body.target).toBe("Flat 101-3BHK");
 
     const unknown = await post(
       {
@@ -536,12 +535,12 @@ describe("notifications hub", () => {
       },
       admin,
     );
-    // Fully settle A-101 so it should drop out of the "unpaid" list.
+    // Fully settle 101-3BHK so it should drop out of the "unpaid" list.
     await post(
       {
         action: "savePayment",
         month: "2027-04",
-        flat: "A-101",
+        flat: "101-3BHK",
         maint: 999999,
         corp: 999999,
         mode: "upi",
@@ -561,7 +560,7 @@ describe("notifications hub", () => {
     );
     expect(r.body.ok).toBe(true);
     expect(r.body.target).toBe("Unpaid Maintenance Flats");
-    // A-102 has no payment recorded for 2027-04, so it must have been targeted.
+    // 102-2BHK has no payment recorded for 2027-04, so it must have been targeted.
     expect(r.body.sentCount).toBeGreaterThan(0);
   });
 

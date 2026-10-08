@@ -83,6 +83,20 @@ interface Props extends ScreenProps {
 export default function More({ items, onOpen, role, username, flat, save, appLock, onAppLock, onLogout }: Props) {
   const [pwOpen, setPwOpen] = useState(false);
   const [lockOpen, setLockOpen] = useState(false);
+
+  // Security must never see the More/Privacy/About/account-information shell.
+  if (role === 'security') {
+    return (
+      <View>
+        <Section title="Contact Us">
+          <TouchableOpacity style={[s.listRow, s.rowBetween]} onPress={() => onOpen('contact')} accessibilityRole="button">
+            <Text style={s.rowTitle}>Contact Us</Text>
+            <ChevronRight size={18} color={GREEN} />
+          </TouchableOpacity>
+        </Section>
+      </View>
+    );
+  }
   return (
     <View>
       <Section title="Account details">
@@ -154,9 +168,8 @@ export default function More({ items, onOpen, role, username, flat, save, appLoc
       <Section title="About us">
         <Text style={s.rowTitle}>{APP_BRAND_NAME}</Text>
         <Text style={[s.muted, { marginTop: 6 }]}>
-          A community management app designed to make everyday association activities
-          easier for residents and administrators. It helps manage maintenance payments,
-          service requests, facility bookings, visitor access, and parcel updates in one place.
+          A community management app that helps residents and the association coordinate maintenance payments, service requests, bookings,
+          visitor access, and parcel updates.
         </Text>
       </Section>
       <Section title="Privacy & data protection">
@@ -170,19 +183,15 @@ export default function More({ items, onOpen, role, username, flat, save, appLoc
           Protections implemented in the app
         </Text>
         <Text style={{ color: '#5f5a74', fontSize: 13, lineHeight: 21 }}>
-          • Account passwords are stored as salted scrypt hashes, not as readable passwords. • The mobile app encrypts locally stored
-          session and selected settings data with AES; its encryption key is stored using the device’s secure Keychain/Keystore facility. •
-          The server encrypts selected sensitive fields, including contact details, using AES-256-GCM when the required server encryption
-          key is configured. • Server-side role checks restrict access to supported features and records. The default server connection uses
-          HTTPS.
+          Your account information is protected using appropriate security measures. Sensitive information is protected during transmission
+          and while stored, where applicable. Access to information and app features is controlled based on user roles and permissions. The
+          app uses secure connections and other standard security practices to help protect your information.
         </Text>
         <View style={{ height: 1, backgroundColor: '#E3F0E4', marginVertical: 14 }} />
-        <Text style={{ color: '#17351D', fontSize: 14, lineHeight: 21, fontWeight: '700', marginBottom: 6 }}>Important limits</Text>
+        <Text style={{ color: '#17351D', fontSize: 14, lineHeight: 21, fontWeight: '700', marginBottom: 6 }}>Important information</Text>
         <Text style={{ color: '#5f5a74', fontSize: 13, lineHeight: 21 }}>
-          Not every database column is encrypted separately at the application layer. Full database-at-rest encryption and provider-level
-          backup/snapshot encryption depend on the database host and must be verified in its settings. Keep ENCRYPTION_SECRET private and
-          stable; without it, protected data and encrypted backups cannot be decrypted. Use the official server connection and sign out on
-          shared devices.
+          Security measures are designed to help protect your information, but no system can guarantee complete security. Please keep your
+          account credentials private, use the official app or website, and sign out when using a shared device.
         </Text>
       </Section>
       <Button

@@ -124,6 +124,27 @@ export default function SecurityDesk({
     }
   };
 
+  const deleteParcel = async (notice: ParcelNotice) => {
+    const confirmed = await openConfirm({
+      title: "Delete parcel notice?",
+      message: `Remove the parcel notice for flat ${notice.flat}? It will no longer appear in the parcel list or notification flow.`,
+      confirmLabel: "Delete parcel",
+      danger: true,
+    });
+    if (!confirmed) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await call({ action: "deleteParcelNotice", id: notice.id }, token);
+      await load();
+      setMessage(`Parcel notice for flat ${notice.flat} deleted.`);
+    } catch (error) {
+      setMessage(errText(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const create = async () => {
     setBusy(true);
     setMessage("");
@@ -573,23 +594,33 @@ export default function SecurityDesk({
                     alt={`Parcel for flat ${notice.flat}`}
                     loading="lazy"
                   />
-                  {notice.status === "pending" ? (
+                  <div className="row-wrap">
+                    {notice.status === "pending" ? (
+                      <button
+                        type="button"
+                        className="pri"
+                        disabled={busy}
+                        onClick={() => void markParcelCollected(notice)}
+                      >
+                        Mark as collected
+                      </button>
+                    ) : (
+                      <p className="muted">
+                        Collected{" "}
+                        {notice.acknowledged_at
+                          ? new Date(notice.acknowledged_at).toLocaleString()
+                          : ""}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      className="pri"
+                      className="danger"
                       disabled={busy}
-                      onClick={() => void markParcelCollected(notice)}
+                      onClick={() => void deleteParcel(notice)}
                     >
-                      Mark as collected
+                      Delete parcel
                     </button>
-                  ) : (
-                    <p className="muted">
-                      Collected{" "}
-                      {notice.acknowledged_at
-                        ? new Date(notice.acknowledged_at).toLocaleString()
-                        : ""}
-                    </p>
-                  )}
+                  </div>
                 </article>
               ))}
             </div>

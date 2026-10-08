@@ -431,11 +431,19 @@ export async function ensureSchema(
       created_by text NOT NULL DEFAULT '',
       created_at timestamptz NOT NULL DEFAULT now(),
       acknowledged_by text,
-      acknowledged_at timestamptz
+      acknowledged_at timestamptz,
+      deleted_at timestamptz,
+      deleted_by text
     )`,
   );
   await q(
+    `ALTER TABLE parcel_notices ADD COLUMN IF NOT EXISTS deleted_at timestamptz, ADD COLUMN IF NOT EXISTS deleted_by text`,
+  );
+  await q(
     `CREATE INDEX IF NOT EXISTS parcel_notices_flat_status_idx ON parcel_notices(flat, status, created_at DESC)`,
+  );
+  await q(
+    `CREATE INDEX IF NOT EXISTS parcel_notices_flat_active_idx ON parcel_notices(flat, created_at DESC) WHERE deleted_at IS NULL`,
   );
   await q(
     `CREATE INDEX IF NOT EXISTS security_events_at_idx ON security_events(at DESC)`,

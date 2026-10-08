@@ -119,7 +119,6 @@ describe("app on the pg driver", () => {
           {
             action: "saveMonth",
             month: "2026-09",
-            create: true,
             expenses: [{ description: "Bescom", amount: 1000 }],
             method: "divide",
             value: 25,
@@ -137,7 +136,7 @@ describe("app on the pg driver", () => {
           {
             action: "savePayment",
             month: "2026-09",
-            flat: "A-101",
+            flat: "101-3BHK",
             maint: 40,
             corp: 853,
             mode: "UPI",
@@ -155,12 +154,12 @@ describe("app on the pg driver", () => {
       value: 25,
     });
     expect(r.payments[0]).toMatchObject({
-      flat: "A-101",
+      flat: "101-3BHK",
       maint: 40,
       corp: 853,
       extra: { c1: "ok" },
     });
-    expect(r.flats).toHaveLength(40);
+    expect(r.flats).toHaveLength(28);
 
     const { sql, APP_TABLES } = await import("../server/db.js");
     const rows = await sql.query(
@@ -234,8 +233,6 @@ describe("db tool: backup / restore / copy", () => {
         email: "",
         excluded: false,
         corp_excluded: false, // column added later: an older backup gets its default
-        block: "",
-        tenant_id: "default",
       },
     ]);
     expect(back.tables.months[0]).toMatchObject({
@@ -252,7 +249,6 @@ describe("db tool: backup / restore / copy", () => {
         tok_ver: 0,
         phone: "",
         email: "",
-        tenant_id: "default",
       }, // column added later: defaults to 0
     ]);
     expect(back.tables.settings.some((s) => s.key === "schema_version")).toBe(
@@ -271,7 +267,7 @@ describe("db tool: backup / restore / copy", () => {
     expect(back.tables.flats).toHaveLength(1); // the DELETE of flats was rolled back
     await expect(
       restoreInto(url(B), { app: "other", tables: {} } as any),
-    ).rejects.toThrow(/not a valid application backup/);
+    ).rejects.toThrow(/not an RV Fallon backup/);
   });
   it("copy moves everything, including user accounts, to another database", async () => {
     const { copyDb, backupFrom } = await import("../server/dbtool.js");

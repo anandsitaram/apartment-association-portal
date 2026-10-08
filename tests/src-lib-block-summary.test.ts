@@ -54,16 +54,20 @@ const month: any = {
 };
 
 describe("duplicate src/lib summary calculation", () => {
-  it("divides all expense lines association-wide", () => {
-    expect(maintOf(month, flats[0])).toBe(533.33);
-    expect(maintOf(month, flats[1])).toBe(533.33);
-    expect(maintOf(month, flats[2])).toBe(533.33);
+  it("uses normal association-wide billing when Is Blocks is off", () => {
+    expect(maintOf(month, flats[0], flats, false)).toBe(533.33);
   });
 
-  it("freezes those dues and preserves expense allocation metadata", () => {
-    const snapshot = snapshotOf(flats, month, []);
-    expect(snapshot.due["A-101"]).toBe(533.33);
-    expect(snapshot.due["B-101"]).toBe(533.33);
+  it("uses hybrid block allocation when Is Blocks is on", () => {
+    expect(maintOf(month, flats[0], flats, true)).toBe(500);
+    expect(maintOf(month, flats[1], flats, true)).toBe(500);
+    expect(maintOf(month, flats[2], flats, true)).toBe(600);
+  });
+
+  it("freezes the same block-aware dues in summary snapshots", () => {
+    const snapshot = snapshotOf(flats, month, [], true);
+    expect(snapshot.due["A-101"]).toBe(500);
+    expect(snapshot.due["B-101"]).toBe(600);
     expect(snapshot.expenses[1].allocationScope).toBe("block");
   });
 });

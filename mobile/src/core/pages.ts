@@ -39,6 +39,15 @@ export const availablePages = (role: Role | string | null | undefined, features?
 
 /** Bottom-bar tabs (max 4) + the rest under "More". */
 export function splitTabs(pages: NavItem[], role: Role | string | null | undefined) {
+  // Security has a deliberately minimal native shell: Security Desk + Contact Us only.
+  // Do not expose More, Privacy, About, account/settings, or unrelated navigation to Security.
+  if (role === 'security') {
+    const allowed = ['security-desk', 'contact'];
+    return {
+      tabs: allowed.map((id) => pages.find((p) => p.id === id)).filter((p): p is NavItem => Boolean(p)),
+      more: [],
+    };
+  }
   const preferred = isAdminRole(role) ? ['dashboard', 'months', 'tickets', 'hall'] : ['dashboard', 'mymaintenance', 'tickets', 'hall'];
   const ids = pages.map((p) => p.id);
   const tabs = preferred.filter((id) => ids.includes(id));

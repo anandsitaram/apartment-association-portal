@@ -117,7 +117,7 @@ export const actions: Record<string, Action> = {
       // Parcel data is resident-owner only. Admin roles receive no resident parcel records.
       if (ctx.me.role !== "user" || !ctx.me.flat) return { notices: [] };
       const notices = await sql.query(
-        `SELECT id,flat,courier,tracking_number,notes,photo_data,status,created_by,created_at,acknowledged_by,acknowledged_at FROM parcel_notices WHERE regexp_replace(lower(COALESCE(flat,'')), '[^a-z0-9]', '', 'g')=regexp_replace(lower(COALESCE($1,'')), '[^a-z0-9]', '', 'g') ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,created_at DESC LIMIT 100`,
+        `SELECT id,flat,courier,tracking_number,notes,photo_data,status,created_by,created_at,acknowledged_by,acknowledged_at FROM parcel_notices WHERE deleted_at IS NULL AND regexp_replace(lower(COALESCE(flat,'')), '[^a-z0-9]', '', 'g')=regexp_replace(lower(COALESCE($1,'')), '[^a-z0-9]', '', 'g') ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,created_at DESC LIMIT 100`,
         [ctx.me.flat],
       );
       return { notices };
@@ -128,10 +128,55 @@ export const actions: Record<string, Action> = {
     async run(_b, ctx) {
       if (ctx.me.role !== "user" || !ctx.me.flat) return { notices: [] };
       const notices = await sql.query(
-        `SELECT id,flat,courier,status,created_at FROM parcel_notices WHERE status='pending' AND regexp_replace(lower(COALESCE(flat,'')), '[^a-z0-9]', '', 'g')=regexp_replace(lower(COALESCE($1,'')), '[^a-z0-9]', '', 'g') ORDER BY created_at DESC LIMIT 100`,
+        `SELECT id,flat,courier,status,created_at FROM parcel_notices WHERE deleted_at IS NULL AND status='pending' AND regexp_replace(lower(COALESCE(flat,'')), '[^a-z0-9]', '', 'g')=regexp_replace(lower(COALESCE($1,'')), '[^a-z0-9]', '', 'g') ORDER BY created_at DESC LIMIT 100`,
         [ctx.me.flat],
       );
       return { notices };
+    },
+  },
+  getParcelNotice: {
+    role: "user",
+    async run(b, ctx) {
+      const id = Number(b.id);
+      if (!Number.isSafeInteger(id) || id <= 0)
+        fail(400, "Invalid parcel notice.");
+      if (ctx.me.role !== "user" || !ctx.me.flat)
+        fail(403, "Only the flat owner can view this parcel.");
+      const [notice] = await sql.query(
+        `SELECT id,flat,courier,tracking_number,notes,photo_data,status,created_by,created_at,acknowledged_by,acknowledged_at
+         FROM parcel_notices
+         WHERE id=$1 AND deleted_at IS NULL
+           AND regexp_replace(lower(COALESCE(flat,'')), '[^a-z0-9]', '', 'g')=regexp_replace(lower(COALESCE($2,'')), '[^a-z0-9]', '', 'g')`,
+        [id, ctx.me.flat],
+      );
+      if (!notice) fail(404, "Parcel notice not found or no longer available.");
+      return { notice };
+    },
+  },
+  deleteParcelNotice: {
+    role: "user",
+    async run(b, ctx) {
+      const id = Number(b.id);
+      if (!Number.isSafeInteger(id) || id <= 0)
+        fail(400, "Invalid parcel notice.");
+      if (ctx.me.role !== "user" || !ctx.me.flat)
+        fail(403, "Only the flat owner can delete this parcel.");
+      const [existing] = await sql.query(
+        `SELECT id,flat FROM parcel_notices WHERE id=$1 AND deleted_at IS NULL`,
+        [id],
+      );
+      if (!existing) fail(404, "Parcel notice not found or already deleted.");
+      if (normalizeFlat(ctx.me.flat) !== normalizeFlat(String(existing.flat)))
+        fail(403, "You can only delete parcels delivered to your own flat.");
+      await sql.query(
+        `UPDATE parcel_notices SET deleted_at=now(),deleted_by=$2 WHERE id=$1 AND deleted_at IS NULL`,
+        [id, ctx.me.username],
+      );
+      ctx.audit = {
+        target: "parcel-notice",
+        detail: { id, flat: existing.flat, action: "deleted" },
+      };
+      return { ok: true };
     },
   },
   deleteParcelPhoto: {
@@ -143,7 +188,7 @@ export const actions: Record<string, Action> = {
       if (ctx.me.role !== "user")
         fail(403, "Only the flat owner can delete this parcel photo.");
       const [existing] = await sql.query(
-        `SELECT id,flat,photo_data FROM parcel_notices WHERE id=$1`,
+        `SELECT id,flat,photo_data FROM parcel_notices WHERE id=$1 AND deleted_at IS NULL`,
         [id],
       );
       if (!existing) fail(404, "Parcel notice not found.");
@@ -174,7 +219,7 @@ export const actions: Record<string, Action> = {
       if (ctx.me.role !== "user")
         fail(403, "Only the flat owner can acknowledge this parcel.");
       const [existing] = await sql.query(
-        `SELECT id,flat,status FROM parcel_notices WHERE id=$1`,
+        `SELECT id,flat,status FROM parcel_notices WHERE id=$1 AND deleted_at IS NULL`,
         [id],
       );
       if (!existing) fail(404, "Parcel notice not found.");
