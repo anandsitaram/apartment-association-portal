@@ -53,7 +53,7 @@ export const isCorpExcluded = (
 // Keep the current month's charge separate from carry-forward amounts so a merged
 // rounding adjustment never changes the internally accounted Corp Fund charge.
 export const corpChargeOf = (f: FlatCalc, m: MonthCalc | null | undefined) => {
-  if (m?.corp_applicable === false || isCorpExcluded(m, f)) return 0;
+  if (!m || m.corp_applicable === false || isCorpExcluded(m, f)) return 0;
   const type = String((f as any)?.type || "")
     .trim()
     .toUpperCase();

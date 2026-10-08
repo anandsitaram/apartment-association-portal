@@ -166,7 +166,10 @@ export const actions: Record<string, Action> = {
         [id],
       );
       if (!existing) fail(404, "Parcel notice not found or already deleted.");
-      if (normalizeFlat(ctx.me.flat) !== normalizeFlat(String(existing.flat)))
+      if (
+        !ctx.me.flat ||
+        normalizeFlat(ctx.me.flat) !== normalizeFlat(String(existing.flat))
+      )
         fail(403, "You can only delete parcels delivered to your own flat.");
       await sql.query(
         `UPDATE parcel_notices SET deleted_at=now(),deleted_by=$2 WHERE id=$1 AND deleted_at IS NULL`,

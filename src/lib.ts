@@ -21,6 +21,7 @@ import type {
 type MonthCalc = Partial<Month> & { method?: Method; rounding?: Rounding };
 type FlatCalc = {
   flat?: string;
+  block?: string;
   bua: number;
   excluded?: boolean;
   corp_excluded?: boolean;
@@ -54,6 +55,15 @@ export const corpOf = (f: FlatCalc, m: MonthCalc | null | undefined) =>
     : rnd(rate(m) * f.bua, m?.corp_rounding || "nearest");
 export const total = (m?: { expenses?: Expense[] | null } | null) =>
   (m?.expenses || []).reduce((s, e) => s + (+e.amount || 0), 0);
+export const billingExpenseTotal = (
+  m?: {
+    expenses?: Expense[] | null;
+    calculated_expense_total?: number | null;
+  } | null,
+) =>
+  m?.calculated_expense_total == null
+    ? total(m)
+    : Number(m.calculated_expense_total) || 0;
 export const val = (m: MonthCalc) => +(m.value ?? m.divisor ?? 25);
 export const rnd = (x: number, r?: Rounding | string) =>
   r === "up"
@@ -80,17 +90,57 @@ export const isMaintExcluded = (
   return list ? list.includes(f?.flat ?? "") : !!f?.excluded;
 };
 // maintenance per flat: divide expenses by N | common amount | rate x sq ft, then rounding
-export const maintOf = (m: MonthCalc, f: FlatCalc) =>
-  isMaintExcluded(m, f) || isExpenseExcluded(m, f)
-    ? 0
-    : rnd(
-        m.method === "common"
-          ? val(m)
-          : m.method === "sqft"
-            ? val(m) * f.bua
-            : total(m) / (val(m) || 25),
-        m.rounding,
-      );
+export const maintOf = (
+  m: MonthCalc,
+  f: FlatCalc,
+  allFlats?: readonly FlatCalc[],
+  isBlocks = false,
+) => {
+  if (isMaintExcluded(m, f) || isExpenseExcluded(m, f)) return 0;
+  let raw =
+    m.method === "common"
+      ? val(m)
+      : m.method === "sqft"
+        ? val(m) * f.bua
+        : billingExpenseTotal(m) / (val(m) || 25);
+  const blockExpenses = (m.expenses || []).filter(
+    (e) => e.allocationScope === "block" && String(e.block || "").trim(),
+  );
+  if (
+    isBlocks &&
+    m.method === "divide" &&
+    blockExpenses.length &&
+    allFlats?.length
+  ) {
+    const blockExpenseTotal = blockExpenses.reduce(
+      (sum, e) => sum + (Number(e.amount) || 0),
+      0,
+    );
+    const sharedTotal = Math.max(
+      0,
+      billingExpenseTotal(m) - blockExpenseTotal,
+    );
+    const matchingBlock = String(f.block || "").trim();
+    const blockTotal = matchingBlock
+      ? blockExpenses.reduce(
+          (sum, e) =>
+            sum +
+            (String(e.block || "").trim() === matchingBlock
+              ? Number(e.amount) || 0
+              : 0),
+          0,
+        )
+      : 0;
+    const blockCount = matchingBlock
+      ? allFlats.filter(
+          (flat) => String(flat.block || "").trim() === matchingBlock,
+        ).length
+      : 0;
+    raw =
+      sharedTotal / (val(m) || 25) + (blockCount ? blockTotal / blockCount : 0);
+  }
+  return rnd(raw, m.rounding);
+};
 // Plain-text description of the month's maintenance calculation (what non-admins see)
 export const RD: Record<string, string> = {
   nearest: "rounded to the nearest ₹1",
@@ -233,6 +283,7 @@ export const snapshotOf = (
   flats: readonly FlatCalc[],
   m: MonthCalc & { month: string },
   pays: readonly Pick<Payment, "flat" | "maint" | "corp">[],
+  isBlocks = false,
 ): Snap => {
   const by: Record<
     string,
@@ -247,7 +298,7 @@ export const snapshotOf = (
       description: e.description,
       amount: +e.amount || 0,
     })),
-    due: per((f) => maintOf(m, f, flats)),
+    due: per((f) => maintOf(m, f, flats, isBlocks)),
     cdue: per((f) => corpOf(f, m)),
     paid: per((f) => +(by[f.flat ?? ""]?.maint ?? 0) || 0),
     cpaid: per((f) => +(by[f.flat ?? ""]?.corp ?? 0) || 0),
