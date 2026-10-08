@@ -107,6 +107,9 @@ export async function buildBook(
     ws.getCell(`A${r}`).value = k + 1;
     ws.getCell(`B${r}`).value = hide ? '••••' : safeExcelText(f.name || '') || null;
     ws.getCell(`C${r}`).value = safeExcelText(f.flat || '') || null;
+    ws.getCell(`D${r}`).value = safeExcelText(f.type || '') || null;
+    ws.getCell(`E${r}`).value = f.bua;
+    ws.getCell(`F${r}`).value = f.uds;
     // Export expected charges as a reliable snapshot. This avoids formulas depending on
     // administrative selection columns that are intentionally omitted from the final workbook.
     ws.getCell(`G${r}`).value = mp;
@@ -537,35 +540,12 @@ export async function buildBook(
   return wb;
 }
 
-// Save a Blob as a file download
-export async function download(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), {
-    href: url,
-    download: name,
-  });
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Browsers may not have started consuming the Blob when click() returns.
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
 // file names start with the organisation's short name, e.g. "Sunrise_Sept_2026.xlsx"
 const fileStem = (settings?: Pick<Settings, 'orgName' | 'orgShort'>) =>
   orgShort(settings)
     .replace(/[^A-Za-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '') || 'Maintenance';
 const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-async function confirmPlaintextExport(kind: string): Promise<boolean> {
-  return openConfirm({
-    title: 'Export confidential maintenance data?',
-    message: `${kind} will be downloaded as a regular, unencrypted file. It may contain resident, payment, expense, or booking information. Continue only on a trusted device and store/share the file securely.`,
-    confirmLabel: 'Export unencrypted file',
-    cancelLabel: 'Cancel',
-  });
-}
 
 /**
  * Excel rejects some workbooks when a theme/template style contains malformed
@@ -616,5 +596,5 @@ export async function createMonthlyWorkbook(args: MonthExportArgs): Promise<stri
   const template = Buffer.from(MOBILE_TEMPLATE_BASE64, 'base64');
   const workbook = await buildBook(mod.default || mod, template, args);
   const bytes = await workbook.xlsx.writeBuffer();
-  return Buffer.from(bytes as Uint8Array).toString('base64');
+  return Buffer.from(bytes).toString('base64');
 }

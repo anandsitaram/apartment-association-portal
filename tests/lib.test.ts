@@ -219,7 +219,7 @@ describe("maintenance", () => {
       },
     });
     expect(maintOf(m, flats[0])).toBe(900);
-    expect(corpOf(flats[0], m)).toBe(250);
+    expect(corpOf(flats[0], m)).toBe(750); // current Corp Fund charge (₹500) + carried Corp Fund (₹250)
   });
   it("adds carried-forward arrears on top of a recalculated current maintenance amount", () => {
     const m = month({

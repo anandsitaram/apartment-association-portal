@@ -151,6 +151,9 @@ export async function buildBook(
       ? "••••"
       : safeExcelText(f.name || "") || null;
     ws.getCell(`C${r}`).value = safeExcelText(f.flat || "") || null;
+    ws.getCell(`D${r}`).value = safeExcelText(f.type || "") || null;
+    ws.getCell(`E${r}`).value = f.bua;
+    ws.getCell(`F${r}`).value = f.uds;
     // Export expected charges as a reliable snapshot. This avoids formulas depending on
     // administrative selection columns that are intentionally omitted from the final workbook.
     ws.getCell(`G${r}`).value = mp;

@@ -532,16 +532,17 @@ export const newMonthBody = (
           corpRounding: source.corp_rounding || "nearest",
         }
       : {
-          method: "divide" as Method,
-          value: Math.max(flats.length, 1),
-          rounding: "none" as Rounding,
-          corpRate: 0.5,
-          corpMethod: "sqft" as const,
+          method: settings.billing?.method || "divide",
+          value: settings.billing?.value ?? Math.max(flats.length, 1),
+          rounding: settings.billing?.rounding || "none",
+          corpRate: settings.billing?.corpRate ?? 0.5,
+          corpMethod: settings.billing?.corpMethod || "sqft",
           corpApplicable: false,
-          corpValue: 0.5,
+          corpValue:
+            settings.billing?.corpValue ?? settings.billing?.corpRate ?? 0.5,
           corp2Bhk: null,
           corp3Bhk: null,
-          corpRounding: "nearest" as Rounding,
+          corpRounding: settings.billing?.corpRounding || "nearest",
         };
   const fromSource = !!source && o.flats === "source";
   return {

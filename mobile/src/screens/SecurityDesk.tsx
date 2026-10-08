@@ -84,7 +84,7 @@ export default function SecurityDesk({ token }: ScreenProps) {
         includeBase64: true,
         maxWidth: 960,
         maxHeight: 960,
-        quality: 0.35,
+        quality: 0.3,
         saveToPhotos: false,
       });
       if (result.didCancel) return;

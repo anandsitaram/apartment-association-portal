@@ -295,9 +295,9 @@ export default function MonthTab({
     ...identityCols,
     "maint",
     ...(mergeMaintenanceCorp ? ["corp"] : []),
-    "texp",
+    ...(!hidden.includes("texp") ? ["texp"] : []),
     mergeMaintenanceCorp ? "tpaid" : "mpaid",
-    ...(!mergeMaintenanceCorp ? ["tpaid"] : []),
+    ...(!mergeMaintenanceCorp && !hidden.includes("tpaid") ? ["tpaid"] : []),
     ...custom.map((c) => c.id).filter((k) => !hidden.includes(k)),
   ];
   const corpCols = [...identityCols, "corp", "cpaid"];

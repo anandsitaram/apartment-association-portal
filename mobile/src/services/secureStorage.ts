@@ -5,6 +5,15 @@ import CryptoJS from 'crypto-js';
 const KEYCHAIN_SERVICE_PREFIX = 'com.myapartment.mobile.secure.';
 const LEGACY_MASTER_SERVICE = 'com.myapartment.mobile.masterkey';
 
+function isCredential(value: unknown): value is { password: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'password' in value &&
+    typeof value.password === 'string'
+  );
+}
+
 function serviceFor(key: string): string {
   // Keychain service identifiers are opaque; avoid arbitrary caller characters.
   const safe = key.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
@@ -27,7 +36,7 @@ export async function secureSetItem<T>(key: string, value: T): Promise<void> {
 export async function secureGetItem<T>(key: string, fallback: T): Promise<T> {
   const service = serviceFor(key);
   const secure = await Keychain.getGenericPassword({ service });
-  if (secure && secure.password) {
+  if (isCredential(secure) && secure.password) {
     try {
       return JSON.parse(secure.password) as T;
     } catch {
@@ -39,7 +48,7 @@ export async function secureGetItem<T>(key: string, fallback: T): Promise<T> {
   if (!raw) return fallback;
   try {
     const legacyKey = await Keychain.getGenericPassword({ service: LEGACY_MASTER_SERVICE });
-    if (!legacyKey?.password) return fallback;
+    if (!isCredential(legacyKey) || !legacyKey.password) return fallback;
     const json = CryptoJS.AES.decrypt(raw, legacyKey.password).toString(CryptoJS.enc.Utf8);
     if (!json) return fallback;
     const value = JSON.parse(json) as T;
